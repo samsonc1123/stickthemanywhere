@@ -1,0 +1,148 @@
+/* /src/styles/HomePage.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes flickerBrowse {
+  0%   { opacity: 1; }
+  5%   { opacity: 0.4; }
+  10%  { opacity: 0.95; }
+  15%  { opacity: 0.2; }
+  20%  { opacity: 1; }
+  35%  { opacity: 0.85; }
+  40%  { opacity: 1; }
+  55%  { opacity: 0.4; }
+  60%  { opacity: 1; }
+  80%  { opacity: 0.8; }
+  85%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes flickerCategories {
+  0%   { opacity: 1; color: yellow; }
+  15%  { opacity: 0.9; color: yellow; }
+  20%  { opacity: 0.1; color: black; }
+  25%  { opacity: 1; color: yellow; }
+  40%  { opacity: 0.85; color: yellow; }
+  45%  { opacity: 0.2; color: black; }
+  50%  { opacity: 1; color: yellow; }
+  70%  { opacity: 0.8; color: yellow; }
+  75%  { opacity: 0.15; color: black; }
+  80%  { opacity: 1; color: yellow; }
+  100% { opacity: 1; color: yellow; }
+}
+
+.browse-title {
+  animation: flickerBrowse 3s infinite;
+  color: yellow;
+}
+
+.categories-title {
+  animation: flickerCategories 11s infinite;
+  color: yellow;
+}
+
+@keyframes flickerFast {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    opacity: 1;
+  }
+  20%, 22%, 24%, 55% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes flickerSlow {
+  0%, 29%, 31%, 33%, 60%, 62%, 100% {
+    opacity: 1;
+  }
+  30%, 32%, 61% {
+    opacity: 0.4;
+  }
+}
+
+.flicker-fast {
+  animation: flickerFast 2s infinite;
+  color: yellow;
+}
+
+.flicker-slow {
+  animation: flickerSlow 6s infinite;
+  color: yellow;
+}
+
+.neon-border-cyan {
+  border: 2px solid #00ffff;
+  box-shadow: 0 0 10px #00ffff;
+}
+.neon-border-pink {
+  border: 2px solid #ff00ff;
+  box-shadow: 0 0 10px #ff00ff;
+}
+.neon-border-purple {
+  border: 2px solid #bf00ff;
+  box-shadow: 0 0 10px #bf00ff;
+}
+.neon-border-yellow {
+  border: 2px solid #ffff00;
+  box-shadow: 0 0 10px #ffff00;
+}
+.neon-border-blue {
+  border: 2px solid #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+}
+.neon-border-green {
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 10px #00ff00;
+}
+.neon-border-orange {
+  border: 2px solid #ff9900;
+  box-shadow: 0 0 10px #ff9900;
+}
+.neon-border-red {
+  border: 2px solid #ff0033;
+  box-shadow: 0 0 10px #ff0033;
+}
+
+@keyframes slideInLeft {
+  0% {
+    transform: translateX(-100%) rotate(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) rotate(-90deg);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    transform: translateX(100%) rotate(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) rotate(-90deg);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.8s ease-out;
+}
+
+/* Smooth internal scrolling for sticker boxes */
+.responsive-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+}
+
+.responsive-scroll::-webkit-scrollbar {
+  display: none;
+}

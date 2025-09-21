@@ -1,0 +1,82 @@
+import { Link } from 'wouter';
+import '../styles/HomePage.css';
+
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-black text-center px-4 py-6 font-orbitron text-white">
+      {/* Title */}
+      <h1 className="text-4xl text-white">Stick</h1>
+      <h1 className="text-4xl text-pink-500">Them</h1>
+      <div className="relative inline-block">
+        <h1 className="text-4xl text-white">Anywhere</h1>
+        <img
+          src="/attached_assets/floating-kitten.png"
+          alt="Kitten"
+          className="absolute w-8 -top-4 right-0 animate-bounce"
+        />
+      </div>
+
+      {/* Browse Categories */}
+      <h2 className="mt-6 mb-2 text-yellow-400 text-lg flicker">
+        Browse Categories
+      </h2>
+
+      {/* Category Buttons */}
+      <div className="flex overflow-x-auto space-x-4 py-2 px-2">
+        <Link href="/animals">
+          <button className="rounded-full px-4 py-2 neon-border-blue text-white whitespace-nowrap">
+            Animals
+          </button>
+        </Link>
+        <Link href="/christian">
+          <button className="rounded-full px-4 py-2 neon-border-pink text-white whitespace-nowrap">
+            Christian
+          </button>
+        </Link>
+        <Link href="/comedy">
+          <button className="rounded-full px-4 py-2 neon-border-purple text-white whitespace-nowrap">
+            Comedy
+          </button>
+        </Link>
+        <Link href="/gaming">
+          <button className="rounded-full px-4 py-2 neon-border-cyan text-white whitespace-nowrap">
+            Gaming
+          </button>
+        </Link>
+        <Link href="/90s-cartoons">
+          <button className="rounded-full px-4 py-2 neon-border-yellow text-white whitespace-nowrap">
+            90s Cartoons
+          </button>
+        </Link>
+        <Link href="/tv-shows">
+          <button className="rounded-full px-4 py-2 neon-border-green text-white whitespace-nowrap">
+            TV Shows
+          </button>
+        </Link>
+        <Link href="/movies">
+          <button className="rounded-full px-4 py-2 neon-border-orange text-white whitespace-nowrap">
+            Movies
+          </button>
+        </Link>
+        <Link href="/memes">
+          <button className="rounded-full px-4 py-2 neon-border-red text-white whitespace-nowrap">
+            Memes
+          </button>
+        </Link>
+      </div>
+
+      {/* Sticker Boxes */}
+      <div className="mt-6 flex flex-col items-center space-y-4 px-4">
+        <div className="w-40 h-48 neon-border-cyan flex items-center justify-center">
+          <span className="text-white">Sticker 1</span>
+        </div>
+        <div className="w-40 h-48 neon-border-cyan flex items-center justify-center">
+          <span className="text-white">Sticker 2</span>
+        </div>
+        <div className="w-40 h-48 neon-border-cyan flex items-center justify-center">
+          <span className="text-white">Sticker 3</span>
+        </div>
+      </div>
+    </div>
+  );
+}

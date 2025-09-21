@@ -1,0 +1,508 @@
+# Stick Them Anywhere - Product Requirements Document
+
+## Executive Summary
+
+**Stick Them Anywhere** is an e-commerce website focused on sticker sales in general, with a unique capability to cater to customers who want to purchase just a single sticker - addressing the market gap where consumers can buy everything online but struggle to find retailers willing to sell individual stickers when needed.
+
+The platform features a responsive, dark-themed interface with neon accents that adapts to different devices (iPhone vertical/horizontal, iPad, Android). Users navigate through a hierarchical category system using horizontally-scrolling aqua buttons that lead to subcategory pages. Product discovery happens through vertically-scrolling picture boxes that display stickers, with the layout adjusting based on device orientation (1 column vertical, 2 columns horizontal on phones).
+
+Key features include full-screen product preview, comprehensive customization capabilities, shopping cart functionality, custom sizing via pinch gestures on tablets, and custom design upload capabilities. The UI incorporates smooth animations, contextual scroll bars, and a distinctive neon color scheme (white/pink/aqua/yellow) against a black perforated background.
+
+The website aims to become the destination for sticker enthusiasts, offering both curated collections across multiple categories and custom sticker creation services through an intuitive, mobile-first user experience, powered by same-day fulfillment capabilities.
+
+## Problem Statement
+
+**Current Market Gap:** Consumers who want to purchase individual stickers face significant barriers in the current market. While virtually every other product category is readily available for online purchase, stickers are typically sold in bulk packs, sheets, or collections, forcing customers to buy more than they need or want.
+
+**User Pain Points:**
+
+- Existing sticker retailers focus primarily on bulk sales and sheets, making it difficult for customers who want just a single sticker
+- Limited platforms offer comprehensive sticker browsing with the flexibility to purchase any quantity - from individual pieces to bulk orders
+- Poor mobile shopping experience for sticker browsing, especially when trying to visualize actual size and quality
+- Lack of customization options for sizing, materials, or personal designs across different purchase quantities
+- No single destination serves both casual buyers wanting one sticker and serious enthusiasts needing bulk quantities
+- Limited expansion into related products like posters, logos, and decals within a unified shopping experience
+
+**Market Opportunity:** The sticker market continues to grow with applications in personal expression, crafting, decorating, and collecting, but lacks a specialized e-commerce solution focused on individual sticker sales with a premium user experience.
+
+## Target Audience
+
+**Primary Demographics:**
+
+- **Age Range:** 13-50 years old, with core focus on millennials and Gen Z, but inclusive of Gen X
+- **Tech Comfort:** Comfortable with mobile shopping and social media
+- **Income:** Disposable income for personal expression and customization purchases
+
+**User Segments:**
+
+- **Teens & Young Adults (13-25)** - Personalizing laptops, phones, water bottles, dorm rooms, cars
+- **Millennials (26-40)** - Office personalization, home décor, crafting, parenting activities
+- **Gen X (41-50)** - Crafting projects, organizing, gifts, supporting children’s interests
+
+**Cross-Generational Appeal:**
+
+- **Personal Expression** - All ages want to customize their belongings
+- **Convenience Factor** - Everyone appreciates not having to buy full sticker sheets
+- **Quality Focus** - Older users especially value being able to see actual size/quality before purchase
+- **Gift Giving** - Parents/grandparents buying for younger family members
+- **Hobbyists** - Crafters, scrapbookers, and collectors span all age groups
+
+**Shopping Behaviors:**
+
+- Mobile-first but expect seamless cross-device experience
+- Visual browsers who need to see products clearly
+- Value customization and personalization options
+- Appreciate smooth, intuitive user interfaces
+
+## Goals & Success Metrics
+
+**Primary Goal:**
+
+- **Establish Market Presence** - Position Stick Them Anywhere as the go-to destination for sticker enthusiasts in general, whether they be single or bulk buyers
+
+**Supporting Objectives:**
+
+- Build brand recognition in the sticker/personalization space
+- Create awareness that individual stickers are available online
+- Establish credibility and trust with target demographic
+- Generate word-of-mouth and organic growth
+
+**Market Presence Indicators:**
+
+- **Brand Awareness** - Search volume for “Stick Them Anywhere” and branded terms
+- **SEO Dominance** - Rank #1 for comprehensive keyword strategy including:
+  - **Simple Keywords:** “stickers,” “buy stickers,” “single sticker,” “individual stickers”
+  - **Long-tail Keywords:** “buy one sticker online,” “custom single stickers,” “individual sticker purchase,” “single stickers for sale,” “buy stickers individually”
+  - **Category-specific Keywords:** “laptop stickers,” “water bottle stickers,” “phone case stickers,” “custom vinyl stickers”
+  - **Intent-based Keywords:** “where to buy single stickers,” “sticker shop online,” “custom sticker maker”
+- **User Base Growth** - New user registrations and return visitors
+- **Social Proof** - Customer reviews, social media mentions, user-generated content
+- **Content Reach** - Blog traffic, social media followers, email subscribers
+
+**Success Philosophy:** Once people know they can buy individual stickers online at Stick Them Anywhere, the sales, retention, and growth metrics will naturally improve as you deliver on the user experience promise.
+
+## Core Features & Functionality
+
+**Navigation System:**
+
+- **Level 1 - Homepage** - “Stick Them Anywhere” title with “Browse Categories” in yellow underneath
+- **Category Buttons** - Horizontally scrolling aqua buttons (Animals, Movies, Music, Christian, Gaming, etc.)
+- **Level 2 - Category Pages** - Category name in yellow underneath “Stick Them Anywhere” title (e.g., “Christian”)
+- **Subcategory Buttons** - Horizontally scrolling aqua buttons for that category (Hearts, Crosses, Flowers, Jesus, Names, Pictures of Words, etc.)
+- **Level 3 - Subcategory Product Pages** - Specific subcategory name in yellow underneath “Stick Them Anywhere” title (e.g., “Hearts”)
+- **Product Display** - Only products from selected subcategory, no need to scroll through mixed categories
+- **Consistent UI** - Same button placement and design across all three levels
+- **Responsive Scroll Bars** - Gray bars that appear during scrolling, disappear when stopped
+
+**Product Discovery:**
+
+- **Level 1 (Homepage)** - Mixed picture boxes from all categories scrolling vertically
+- **Level 2 (Category Pages)** - Picture boxes from selected category only (e.g., all Christian stickers)
+- **Level 3 (Subcategory Pages)** - Highly targeted product display (e.g., only heart stickers from Christian category)
+- **Adaptive Layout** - 1 column (vertical phone), 2 columns (horizontal phone), optimized for iPad/Android
+- **Visual Browsing** - Large, clear product imagery for easy scanning
+- **Pagination** - 10 products per page to start
+- **Progressive Filtering** - Each level narrows down product selection for easier discovery
+
+**Product Interaction:**
+
+- **Full-Screen Preview** - Tap image to see actual sticker size
+- **Customization Playground** - Users can modify stickers before adding to cart:
+  - Custom sizing (pinch-to-zoom or manual specifications)
+  - Border options (white border, no border, holographic)
+  - Photo upload/camera capture for custom designs
+  - Real-time preview of all modifications
+- **Long Press to Add to Cart** - Final step requires long press gesture to confirm purchase
+- **Easy Navigation** - Back button to return to browsing without losing changes
+
+**Custom Sticker Creation Flow:**
+
+- **Photo Capture/Upload** - Take picture or use existing photos
+- **Live Customization** - Visual editing in real-time
+- **Border & Effect Options** - Multiple styling choices
+- **Size Adjustment** - Pinch-to-zoom or input specific dimensions
+- **Preview & Confirm** - See final product before cart addition
+- **Long Press to Add** - Final confirmation step requires long press gesture
+
+**Tinder-Style Swipe System:**
+
+- **Right Swipe** - Enter customization mode (not instant cart)
+- **Left Swipe** - Dismiss/go back with red X circle (bottom right quadrant)
+- **Progressive Visual Feedback** - Green arrow (bottom left) and red X appear as user swipes
+- **Customization Phase** - Full editing capabilities after swipe
+- **Final Add to Cart** - After customization is complete
+
+**Material Selection Feature:**
+
+- **Material Showcase** - Visual display of different sticker materials and their properties
+- **Static Cling PVC Highlight** - Feature signature “stick anywhere” material prominently
+- **Material Properties Display** - Show adhesive vs. static cling, wet/dry application capabilities
+- **Use Case Examples** - Photos/videos showing materials on different surfaces
+- **Interactive Material Guide** - Help users choose best material for their intended use
+
+**User Engagement Features:**
+
+- **Surprise Sticker Comping** - Randomly make one existing cart item free as a surprise
+- **Comp Logic System** - Algorithm to determine when/which cart items to comp
+- **Surprise Notifications** - “Surprise! Your [sticker name] is on us today!”
+- **Cart Price Update** - Automatic price adjustment with clear visual indication of the comp
+
+**Device-Specific Adaptations:**
+
+- **iPhone** - Vertical/horizontal layout changes, camera integration
+- **iPad** - Enhanced pinch-to-resize functionality, optimized horizontal scrolling
+- **Android Phones** - Vertical-optimized experience with smooth horizontal button scrolling
+- **Android Tablets** - Enhanced touch interactions, horizontal scrolling optimization, pinch-to-zoom capabilities
+
+## User Experience Requirements
+
+**Visual Design Standards:**
+
+- **Dark Theme** - Black background with subtle white perforations for texture
+- **Neon Color Palette** - Stick (neon white), Them (neon pink), Anywhere (neon white)
+- **Button Design** - Aqua, rounded buttons with smooth flowing animations
+- **Typography** - Main page headers and subtitle headers in yellow neon (positioned directly underneath titles on main page and subcategory pages)
+- **Header Hierarchy** - “Browse Categories” in yellow Astro text, 16px (iPhone baseline), subcategory page titles also in yellow
+- **Transparency Effects** - See-through picture boxes with neon aqua outlines
+
+**Responsive Design Requirements:**
+
+- **iPhone Vertical** - Single column layout, optimized button/box sizing
+- **iPhone Horizontal** - Two-column layout adaptation
+- **iPad** - Enhanced touch interactions, pinch-to-zoom capabilities, optimized horizontal scrolling
+- **Android Phones** - Vertical-optimized experience with smooth horizontal category button scrolling
+- **Android Tablets** - Enhanced touch interactions, horizontal scrolling optimization, pinch-to-zoom capabilities
+- **Cross-Device Consistency** - Same core experience across all platforms
+
+**Navigation & Interaction:**
+
+- **Smooth Scrolling** - Fluid horizontal button scrolling, vertical picture box scrolling
+- **Contextual Scroll Bars** - Gray bars appear only during movement, fade when stopped
+- **Instant Feedback** - Immediate visual response to all user interactions
+- **Intuitive Gestures** - Pinch-to-zoom, tap-to-expand, swipe navigation
+
+**Performance Standards:**
+
+- **Fast Loading** - Quick image loading and smooth transitions
+- **Responsive Touch** - No delay between user action and visual response
+- **Smooth Animations** - 60fps scrolling and button transitions
+- **Offline Capability** - Basic browsing when connection is poor
+
+**Accessibility Requirements:**
+
+- **Touch-Friendly** - Appropriately sized buttons and touch targets
+- **Visual Clarity** - High contrast neon colors against dark background
+- **Easy Navigation** - Clear visual hierarchy and intuitive flow
+
+**Custom Creation UX:**
+
+- **Real-Time Preview** - Instant visual feedback during sticker creation
+- **Simple Controls** - Easy-to-understand sizing and border options
+- **Quality Assurance** - Clear preview of final product before ordering
+
+## Technical Requirements
+
+**Tech Stack:**
+
+- **Frontend:** React + Wouter (lightweight routing) deployed on Vercel
+- **Backend:** Supabase (PostgreSQL database + Auth + Storage)
+- **Payments:** Stripe (payment processing, checkout, subscriptions)
+- **Deployment:** Vercel (frontend) + Supabase (backend services)
+
+**Frontend Development:**
+
+- **React Application** - Component-based architecture for reusable UI elements
+- **Wouter Router** - Lightweight routing for category/subcategory navigation
+- **Vercel Deployment** - Fast global CDN, automatic deployments, edge functions
+- **Progressive Web App (PWA)** - Mobile-first experience with app-like features
+- **Cross-Platform Compatibility** - iOS Safari, Android Chrome, desktop browsers
+- **Advanced Touch Optimization** - Native gesture support including:
+  - **Tinder-Style Swipe System** - Single finger left/right swipe on full-screen product view
+  - **Progressive Visual Feedback** - Green arrow (bottom left) appears as user swipes right toward customization
+  - **Dismissal Gesture** - Red X circle (bottom right) appears as user swipes left to go back
+  - **Responsive Animations** - Smooth, real-time visual feedback during swipe gestures
+  - **Auto-Trigger Thresholds** - Automatic customization mode when swipe reaches sufficient distance
+- **Pinch-to-zoom, swipe, tap interactions**
+- **Image Optimization** - Fast-loading, high-quality product images with lazy loading
+- **Smooth Animations** - CSS3/JavaScript animations for scrolling and transitions
+
+**Swipe Interaction System:**
+
+- **Gesture Recognition** - Precise swipe distance and direction detection
+- **Visual Indicators** - Progressive opacity/size changes for arrows and buttons
+- **Haptic Feedback** - Subtle vibration on supported devices when thresholds are reached
+- **State Management** - Smooth transitions between full-screen view and customization states
+
+**Backend Infrastructure:**
+
+- **Supabase Database** - PostgreSQL for product catalog, categories, user data, orders
+- **Supabase Auth** - User authentication, account management, session handling
+- **Supabase Storage** - Photo uploads, custom sticker images, product imagery
+- **Real-time Features** - Live customization preview, inventory updates
+- **Row Level Security** - Data protection and user privacy
+- **Edge Functions** - Custom image processing and business logic
+- **Print Integration** - API connection to local printing partner for same-day fulfillment
+
+**Database Requirements:**
+
+- **Product Catalog** - Categories, subcategories, product images, pricing, materials
+- **User Management** - Account creation, order history, preferences
+- **Custom Orders** - Storage for user-uploaded designs and specifications
+- **Material Database** - Static cling PVC and other material properties and pricing
+
+**Mobile-Specific Features:**
+
+- **Camera Integration** - Native camera access for custom sticker creation
+- **Photo Library Access** - Device photo selection capabilities
+- **Touch Gestures** - Pinch-to-zoom, scroll mechanics
+- **Offline Caching** - Store browsing data for poor connectivity situations
+
+**Performance Requirements:**
+
+- **Fast Load Times** - Under 3 seconds initial page load
+- **Scalable Infrastructure** - Handle traffic spikes and growth
+- **CDN Integration** - Global content delivery for images
+- **Mobile Optimization** - Minimal data usage, efficient caching
+
+**Security & Payment:**
+
+- **Stripe Integration** - Secure payment processing, credit cards, digital wallets (Apple Pay, Google Pay)
+- **Stripe Checkout** - Optimized mobile checkout experience
+- **PCI Compliance** - Stripe handles all payment security requirements
+- **SSL Encryption** - Secure data transmission
+- **Subscription Ready** - Stripe supports future subscription models if needed
+- **Data Protection** - User privacy and uploaded image security via Supabase RLS
+
+**SEO Technical Requirements:**
+
+- **Search Engine Optimization** - Clean URLs, meta tags, structured data
+- **Site Speed** - Google Core Web Vitals compliance
+- **Mobile-First Indexing** - Optimized for mobile search rankings
+
+## Timeline & Milestones
+
+**Phase 1: MVP Launch (6-8 weeks)**
+
+**Core Features Only:**
+
+- Horizontal scrolling category buttons (aqua, rounded)
+- Subcategory pages with identical homepage layout
+- Vertically scrolling picture boxes (10 per page)
+- Full-screen sticker preview with back button
+- Basic customization capabilities (sizing, borders)
+- Basic add to cart and simple checkout
+- Mobile-responsive design (iPhone vertical/horizontal, basic tablet/Android)
+- Dark theme with neon colors (white/pink/aqua on black with perforations)
+- Basic product catalog management
+- Material showcase featuring static cling PVC
+
+**Phase 2: Enhanced Experience (Weeks 9-12)**
+
+- Tinder-style swipe interactions in full-screen view
+- Surprise sticker comping system
+- Contextual scroll bars
+- Advanced customization features
+- Performance optimizations
+- **AI Chat Agent Integration** - Text-based customer assistance
+
+**Phase 3: Advanced Features (Weeks 13+)**
+
+- Custom photo upload and sticker creation
+- Advanced pinch-to-zoom sizing
+- Enhanced material selection tools
+- Analytics and user engagement features
+- **Advanced AI Agent Features** - Voice integration and visual AI assistance
+
+**Critical Path Dependencies:**
+
+- **Week 1-2:** Design mockups and technical architecture
+- **Week 3-4:** Core navigation and product display development
+- **Week 5-6:** Shopping cart, payment, and mobile interactions
+- **Week 7-8:** Testing, bug fixes, and launch preparation
+
+## Competitive Analysis
+
+**Current Market Landscape:**
+
+**Primary Competitors:**
+
+**1. Custom Sticker Companies (Focus: Business/Bulk)**
+
+- Sticker Mule - “easiest way to buy custom stickers” with 4-day turnaround
+- StickerApp - “high-quality custom stickers online” with material/size choices
+- VistaPrint - offers “custom sticker singles” but focuses on business branding
+- **Gap:** All require custom design upload, minimum quantities, business focus
+
+**2. Pre-Made Sticker Retailers:**
+
+- Sticker Planet - “world’s best stickers all in one place” for all ages
+- Redbubble - “millions of original designs” by independent artists
+- Amazon/eBay - Bulk sheets (20 sheets, 200 stickers) rather than individuals
+- **Gap:** Still selling in sheets/packs, not true individual stickers
+
+**3. Craft/DIY Retailers:**
+
+- Avery - “blank stickers on sheets” for DIY printing
+- Etsy sellers - handmade/custom pieces
+- **Gap:** Not optimized for mobile browsing, limited selection
+
+**Key Market Gaps Stick Them Anywhere Fills:**
+
+**Unique Positioning:**
+
+- **True Individual Sales** - No competitor sells single stickers; all require sheets/minimums
+- **Mobile-First Experience** - No competitor has Tinder-style swipe interface
+- **Visual Discovery** - Category-based browsing vs. search-dependent sites
+- **Instant Gratification** - Quick customization vs. lengthy custom design process
+- **Same-Day Fulfillment** - No competitor offers day-of-order printing and shipping
+- **Material Innovation** - Static cling PVC is unique positioning vs. standard adhesive stickers
+
+**Competitive Advantages:**
+
+- **Target Market Focus** - 13-50 age range vs. business-focused competitors
+- **User Experience** - Smooth mobile interactions vs. desktop-heavy competitors
+- **Pricing Model** - Individual sticker pricing vs. bulk minimums
+- **Discovery Method** - Visual browsing vs. text-based search
+- **Brand Story Authenticity** - “Stick Them Anywhere” name directly tied to actual material capability
+- **Local Partnership** - Direct oversight of quality and immediate fulfillment
+
+## Risk Assessment & Mitigation Strategies
+
+**Technical Risks:**
+
+**1. Mobile Performance Issues**
+
+- **Risk:** Complex animations and image loading could cause lag on older phones
+- **Mitigation:** Progressive loading, image optimization, performance testing on various devices
+- **Backup Plan:** Simplified version for lower-end devices
+
+**2. Cross-Platform Compatibility**
+
+- **Risk:** Swipe gestures and pinch-to-zoom may not work consistently across iOS/Android
+- **Mitigation:** Extensive device testing, fallback touch controls, progressive enhancement
+
+**3. Custom Sticker Quality Control**
+
+- **Risk:** User-uploaded images may be low resolution or inappropriate for printing
+- **Mitigation:** Automated image quality checks, resolution requirements, content moderation system
+
+**Business Risks:**
+
+**4. Market Adoption**
+
+- **Risk:** Users may not understand the concept of buying individual stickers
+- **Mitigation:** Clear messaging, educational content, free samples, social media marketing
+
+**5. Competition Response**
+
+- **Risk:** Major players (Etsy, Amazon) could copy the individual sticker model
+- **Mitigation:** Focus on superior UX, build brand loyalty early, continuous feature innovation
+
+**Operational Advantages (Risk Mitigation):**
+
+- **Same-Day Fulfillment** - Local supplier partnership enables day-of-order printing and shipping
+- **Quality Control** - Direct oversight of printing process and materials
+- **Cost Structure** - Eliminates shipping delays and reduces operational complexity
+- **Inventory Risk Eliminated** - Print-on-demand model with immediate production capability
+
+**Customer Service & Payment:**
+
+- **Risk:** Small transaction amounts may have high processing fees
+- **Mitigation:** Bundle incentives, minimum order amounts, payment processor negotiations
+- **Risk:** Custom orders may create high support volume
+- **Mitigation:** Self-service tools, clear customization previews, FAQ system
+
+**Mitigation Timeline:**
+
+- **Pre-Launch:** Address technical and quality control risks
+- **Month 1-3:** Monitor adoption and operational issues
+- **Month 4-6:** Scale solutions based on actual user behavior
+
+## Future Enhancement Features (Post-MVP)
+
+**AI Agent Integration:**
+
+**Text-Based Chat Agent (Phase 2):**
+
+- **Embedded Chat Widget** - Bottom right corner with neon theme integration
+- **Context-Aware Assistance** - Knows which stickers user is currently viewing
+- **Product Recommendations** - “Based on your browsing, you might like…”
+- **Material Guidance** - Explains static cling PVC vs adhesive options and use cases
+- **Custom Design Help** - Walks users through upload process and optimization
+- **Order Assistance** - Guides through checkout and answers sizing questions
+- **Real-Time Support** - Instant responses during customization process
+
+**Voice Integration (Phase 3):**
+
+- **Web Speech API** - Browser-based voice recognition for hands-free browsing
+- **Voice-to-Text + Text Responses** - User speaks, agent responds in text
+- **Full Voice Conversation** - Bi-directional audio communication
+- **Mobile Optimized** - Hands-free browsing while customizing stickers
+- **Voice Product Search** - “Show me waterproof stickers for laptops”
+
+**Visual AI Assistant (Phase 3):**
+
+- **GPT-4 Vision Integration** - Can analyze uploaded photos and sticker designs
+- **Image Recognition** - User uploads photo, AI suggests similar stickers in catalog
+- **Design Feedback** - “This design would work better on vinyl vs static cling”
+- **Size Recommendations** - Based on intended use case and surface type
+- **Quality Assessment** - Evaluates uploaded images for print viability
+
+**AI Agent Capabilities:**
+
+- **Custom Knowledge Base** - Trained on product catalog, materials, and use cases
+- **Product Discovery** - Intelligent search and filtering assistance
+- **Material Education** - Explains when to use different sticker materials
+- **Custom Design Consultation** - Helps optimize user uploads for best results
+- **Upselling Intelligence** - Suggests complementary products and materials
+- **Technical Support** - Troubleshoots customization and ordering issues
+
+**Integration Points:**
+
+- **Product Pages** - Contextual help about current sticker and materials
+- **Customization Screen** - Real-time design feedback and suggestions
+- **Cart/Checkout** - Order questions, shipping options, and upsells
+- **Upload Process** - Technical guidance on image quality and design optimization
+- **Material Selection** - Personalized recommendations based on intended use
+
+**Technical Implementation:**
+
+- **OpenAI GPT-4** - Natural language processing and responses
+- **OpenAI Whisper** - Speech-to-text for voice interactions
+- **ElevenLabs** - Natural voice responses for full audio experience
+- **Custom Training Data** - Product catalog, material properties, use cases
+- **Real-Time Context** - Integration with user’s current page and cart contents
+
+**Gamification Elements:**
+
+- Sticker collection progress boards
+- Achievement badges for milestones
+- Daily featured stickers
+- Streak rewards for repeat customers
+
+**Social & Sharing Features:**
+
+- “Sticker Stories” user-generated content
+- Collection showcase profiles
+- Social media integration
+- Friend recommendations
+
+**Personalization & AI:**
+
+- Smart recommendations based on browsing
+- Personal style quizzes
+- Predictive search capabilities
+- Seasonal suggestions
+
+**Advanced Engagement:**
+
+- Limited edition drops
+- Flash sales and promotions
+- New arrival notifications
+- Enhanced micro-interactions
+
+-----
+
+**Document Status:** Complete PRD for MVP development
+**Next Steps:** Begin technical architecture and design mockup phase
+**Timeline:** 6-8 weeks to MVP launch with same-day fulfillment capability

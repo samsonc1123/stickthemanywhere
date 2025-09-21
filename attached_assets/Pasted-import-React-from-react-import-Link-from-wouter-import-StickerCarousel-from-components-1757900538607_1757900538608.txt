@@ -1,0 +1,74 @@
+import React from 'react';
+import { Link } from 'wouter';
+import StickerCarousel from '../components/StickerCarousel';
+import { wordsInFlowers, flowersAndWords, flowersAroundWords } from '../stickers/floralStickers';
+
+const subcategories = [
+  { name: 'Words in Flowers', color: 'bg-neon-aqua' },
+  { name: 'Flowers and Words', color: 'bg-neon-aqua' },
+  { name: 'Flowers Around Words', color: 'bg-neon-aqua' },
+];
+
+export default function FloralPage() {
+  return (
+    <div className="h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 overflow-hidden">
+      {/* Header */}
+      <div className="text-center mb-2 landscape:mb-1">
+        <Link href="/">
+          <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">
+            {/* Portrait layout */}
+            <div className="flex flex-col items-center landscape:hidden">
+              <div className="flex items-center">
+                <span className="glow-yellow animate-flicker-extremely-slow-single">Stick</span>
+                <span className="text-pink-400 text-2xl transform rotate-12 inline-block mx-2" style={{ fontFamily: 'Pacifico, cursive' }}>Them</span>
+              </div>
+              <span className="glow-yellow animate-flicker-extremely-slow-single">Anywhere</span>
+            </div>
+            {/* Landscape layout */}
+            <div className="hidden landscape:flex landscape:items-center landscape:justify-center landscape:gap-2 landscape:text-4xl">
+              <span className="glow-yellow animate-flicker-extremely-slow-single">Stick</span>
+              <span className="text-pink-400 text-xl transform rotate-12 inline-block" style={{ fontFamily: 'Pacifico, cursive' }}>Them</span>
+              <span className="glow-yellow animate-flicker-extremely-slow-single">Anywhere</span>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Category Title */}
+      <div className="text-center mb-2 landscape:mb-1">
+        <h1 className="text-yellow-400 text-lg font-bold font-audiowide animate-categoriesFlicker">
+          Christian Floral
+        </h1>
+      </div>
+
+      {/* Subcategories */}
+      <div className="flex justify-start mb-2 landscape:mb-1 w-full relative">
+        <div
+          className="overflow-x-scroll overflow-y-hidden whitespace-nowrap pl-4 pr-4 py-2 w-full auto-hide-scrollbar"
+          style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+        >
+          {subcategories.map((sub, i) => (
+            <button
+              key={i}
+              className={`inline-block rounded-full ${sub.color} px-4 py-2 mx-1 hover:scale-105 transition-transform font-montserrat`}
+              style={{ color: 'black' }}
+            >
+              {sub.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stickers Grid */}
+      <div className="flex-1 overflow-y-auto w-full">
+        <div className="flex justify-center pb-4 landscape:pb-16">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-12 landscape:gap-12 max-w-lg landscape:max-w-4xl px-4">
+            <StickerCarousel stickers={wordsInFlowers} />
+            <StickerCarousel stickers={flowersAndWords} />
+            <StickerCarousel stickers={flowersAroundWords} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
