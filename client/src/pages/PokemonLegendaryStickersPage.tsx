@@ -45,8 +45,15 @@ export default function PokemonLegendaryStickersPage() {
   }, [legendaryStickers, mythicalStickers, ultraBeastStickers]);
 
   const uniqueGroups = useMemo(() => {
-    // DEBUG: Deduplication by code
-    return Array.from(new Map(LEGENDARY_GROUPS.map(g => [g.code, g])).values());
+    // DEBUG: Deduplication by normalized code
+    const groups = new Map();
+    LEGENDARY_GROUPS.forEach(g => {
+      const normalized = g.code.toUpperCase().replace(/_/g, '-');
+      if (!groups.has(normalized)) {
+        groups.set(normalized, g);
+      }
+    });
+    return Array.from(groups.values());
   }, []);
 
   const filteredStickers = selectedGroup

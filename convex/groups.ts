@@ -16,8 +16,9 @@ export const getGroupsBySubcategory = query({
     
     const unique = new Map();
     for (const g of results) {
-      if (!unique.has(g.code)) {
-        unique.set(g.code, g);
+      const normalizedCode = g.code.toUpperCase().replace(/_/g, '-');
+      if (!unique.has(normalizedCode)) {
+        unique.set(normalizedCode, g);
       }
     }
     
