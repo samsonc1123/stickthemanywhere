@@ -22,7 +22,15 @@ export default function PokemonSubcategoryPage() {
 
   const groups = useMemo(() => {
     if (!rawGroups) return [];
-    return (rawGroups as any[]).sort((a, b) => {
+    // Deduplicate by canonical code (UPPERCASE + HYPHENS) to handle DB collisions like ULTRA_BEAST vs ULTRA-BEAST
+    const seen = new Map<string, any>();
+    for (const g of rawGroups as any[]) {
+      const canonical = g.code.toUpperCase().replace(/_/g, '-');
+      if (!seen.has(canonical)) {
+        seen.set(canonical, { ...g, code: canonical });
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => {
       const ao = a.sortOrder ?? 0;
       const bo = b.sortOrder ?? 0;
       if (ao !== bo) return ao - bo;
@@ -132,8 +140,8 @@ export default function PokemonSubcategoryPage() {
         {isLoading ? (
           <span className="text-gray-500 animate-pulse">Loading...</span>
         ) : (
-          groups.map((group: any, index: number) => (
-            <Link key={index} href={getLinkHref(group)}>
+          groups.map((group: any) => (
+            <Link key={group.code} href={getLinkHref(group)}>
               <button
                 className="inline-block rounded-full px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform"
                 style={{ 
@@ -160,8 +168,8 @@ export default function PokemonSubcategoryPage() {
                 <span className="text-gray-500 text-sm text-center px-2">No items found</span>
               </div>
             ) : (
-              groups.map((group: any, i: number) => (
-                <Link key={i} href={getLinkHref(group)}>
+              groups.map((group: any) => (
+                <Link key={group.code} href={getLinkHref(group)}>
                   <div className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
                     style={{ borderColor: getBackgroundColor(group.name) }}
                   >
