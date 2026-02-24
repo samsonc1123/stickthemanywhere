@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react'; // DEBUG: added useRef
 import { Link } from 'wouter';
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -13,7 +13,11 @@ const LEGENDARY_GROUPS = [
 const GROUP_CODES = LEGENDARY_GROUPS.map(g => g.code);
 
 export default function PokemonLegendaryStickersPage() {
-  console.log("Legendary page render");
+  // DEBUG: render counter
+  const renderCount = useRef(0);
+  renderCount.current++;
+
+  console.log("Legendary page render", renderCount.current);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const legendaryStickers = useQuery(
@@ -41,11 +45,7 @@ export default function PokemonLegendaryStickersPage() {
   }, [legendaryStickers, mythicalStickers, ultraBeastStickers]);
 
   const uniqueGroups = useMemo(() => {
-    // Audit log as requested
-    console.log("LEGENDARY pills raw:", LEGENDARY_GROUPS.map(p => ({ code: p.code, name: p.name })));
-    console.log("LEGENDARY pills count:", LEGENDARY_GROUPS.length);
-    
-    // Last-mile deduplication
+    // DEBUG: Deduplication by code
     return Array.from(new Map(LEGENDARY_GROUPS.map(g => [g.code, g])).values());
   }, []);
 
@@ -57,6 +57,12 @@ export default function PokemonLegendaryStickersPage() {
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
+      {/* DEBUG: Debug Badge */}
+      <div className="fixed bottom-4 right-4 bg-black/80 border border-neon-yellow p-2 rounded text-[10px] z-50 pointer-events-none font-mono">
+        <div>Renders: {renderCount.current}</div>
+        <div>Codes: {uniqueGroups.map(g => g.code).join(', ')}</div>
+      </div>
+
       <div className="text-center mb-2 landscape:mb-1">
         <Link href="/">
           <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">
@@ -100,7 +106,8 @@ export default function PokemonLegendaryStickersPage() {
           >
             All
           </button>
-            {uniqueGroups.map(group => (
+          {/* DEBUG: Using uniqueGroups */}
+          {uniqueGroups.map(group => (
             <button
               key={group.code}
               onClick={() => setSelectedGroup(group.code === selectedGroup ? null : group.code)}
