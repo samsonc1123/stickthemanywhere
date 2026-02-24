@@ -13,6 +13,7 @@ const LEGENDARY_GROUPS = [
 const GROUP_CODES = LEGENDARY_GROUPS.map(g => g.code);
 
 export default function PokemonLegendaryStickersPage() {
+  console.log("Legendary page render");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const legendaryStickers = useQuery(
