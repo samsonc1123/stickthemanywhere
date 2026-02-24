@@ -39,6 +39,15 @@ export default function PokemonLegendaryStickersPage() {
     return tagged;
   }, [legendaryStickers, mythicalStickers, ultraBeastStickers]);
 
+  const uniqueGroups = useMemo(() => {
+    // Audit log as requested
+    console.log("LEGENDARY pills raw:", LEGENDARY_GROUPS.map(p => ({ code: p.code, name: p.name })));
+    console.log("LEGENDARY pills count:", LEGENDARY_GROUPS.length);
+    
+    // Last-mile deduplication
+    return Array.from(new Map(LEGENDARY_GROUPS.map(g => [g.code, g])).values());
+  }, []);
+
   const filteredStickers = selectedGroup
     ? allStickers.filter(s => s._groupCode === selectedGroup)
     : allStickers;
@@ -90,7 +99,7 @@ export default function PokemonLegendaryStickersPage() {
           >
             All
           </button>
-          {LEGENDARY_GROUPS.map(group => (
+            {uniqueGroups.map(group => (
             <button
               key={group.code}
               onClick={() => setSelectedGroup(group.code === selectedGroup ? null : group.code)}
