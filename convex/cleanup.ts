@@ -143,6 +143,66 @@ export const purgeNonCanonical = mutation({
   },
 });
 
+export const cleanupTaxonomy = mutation({
+  handler: async (ctx) => {
+    const results = {
+      groupsProcessed: 0,
+      groupsMerged: 0,
+      linksMigrated: 0,
+      stickersUpdated: 0,
+    };
+
+    const allGroups = await ctx.db.query("groups").collect();
+    const canonicalGroups = new Map();
+
+    for (const group of allGroups) {
+      const canonicalCode = group.code.toUpperCase().replace(/_/g, "-");
+      const key = `${group.subcategoryCode}:${canonicalCode}`;
+
+      if (!canonicalGroups.has(key)) {
+        if (group.code !== canonicalCode) {
+          await ctx.db.patch(group._id, { code: canonicalCode });
+        }
+        canonicalGroups.set(key, group._id);
+        results.groupsProcessed++;
+      } else {
+        const canonicalId = canonicalGroups.get(key);
+        
+        // Migrate links
+        const links = await ctx.db
+          .query("stickerGroupLinks")
+          .withIndex("by_group", (q) => q.eq("groupCode", group.code))
+          .collect();
+        for (const link of links) {
+          await ctx.db.patch(link._id, { groupCode: canonicalCode });
+          results.linksMigrated++;
+        }
+
+        // Migrate stickers (if any direct references exist)
+        const stickers = await ctx.db
+          .query("stickers")
+          .filter((q) => q.eq(q.field("subcategoryCode"), group.subcategoryCode))
+          .collect();
+        for (const sticker of stickers) {
+          if (sticker.code && sticker.code.includes(group.code)) {
+             // This is a heuristic, but stickers usually follow the group/sub prefix
+             const newStickerCode = sticker.code.replace(group.code, canonicalCode);
+             if (newStickerCode !== sticker.code) {
+               await ctx.db.patch(sticker._id, { code: newStickerCode });
+               results.stickersUpdated++;
+             }
+          }
+        }
+
+        await ctx.db.delete(group._id);
+        results.groupsMerged++;
+      }
+    }
+
+    return results;
+  },
+});
+
 export const migrateGroupLinks = mutation({
   handler: async (ctx) => {
     const CODE_MAP: Record<string, string> = {
