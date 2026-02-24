@@ -64,10 +64,23 @@ export default function PokemonLegendaryStickersPage() {
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
-      {/* DEBUG: Debug Badge */}
-      <div className="fixed bottom-4 right-4 bg-black/80 border border-neon-yellow p-2 rounded text-[10px] z-50 pointer-events-none font-mono">
-        <div>Renders: {renderCount.current}</div>
-        <div>Codes: {uniqueGroups.map(g => g.code).join(', ')}</div>
+      {/* DEBUG: Floating Debug Badge */}
+      <div className="fixed bottom-4 right-4 bg-black/90 border-2 border-neon-yellow p-3 rounded-lg shadow-[0_0_15px_rgba(255,255,0,0.5)] z-[9999] pointer-events-none font-mono text-xs animate-pulse">
+        <div className="text-neon-yellow font-bold mb-1 border-b border-neon-yellow/30 pb-1">SYSTEM DEBUG</div>
+        <div className="flex justify-between gap-4">
+          <span className="text-gray-400">Renders:</span>
+          <span className="text-white">{renderCount.current}</span>
+        </div>
+        <div className="mt-1">
+          <div className="text-gray-400 mb-1">Active Codes:</div>
+          <div className="flex flex-wrap gap-1">
+            {uniqueGroups.map(g => (
+              <span key={g.code} className="bg-neon-yellow/20 text-neon-yellow px-1 rounded border border-neon-yellow/30">
+                {g.code}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="text-center mb-2 landscape:mb-1">
