@@ -45,7 +45,7 @@ export default function PokemonLegendaryStickersPage() {
   }, [legendaryStickers, mythicalStickers, ultraBeastStickers]);
 
   const uniqueGroups = useMemo(() => {
-    // DEBUG: Deduplication by normalized code
+    // DEBUG: Enforce canonical code format = UPPERCASE + HYPHENS ONLY
     const groups = new Map();
     LEGENDARY_GROUPS.forEach(g => {
       const normalized = g.code.toUpperCase().replace(/_/g, '-');
