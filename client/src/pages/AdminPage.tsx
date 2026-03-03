@@ -45,10 +45,6 @@ export default function AdminPage() {
   };
 
   const handleBootstrap = async () => {
-    if (!isAuthenticated) {
-      alert("Not logged in — request magic link login first");
-      return;
-    }
     setClickCount(prev => prev + 1);
     try {
       const { useMutation } = await import("convex/react");
