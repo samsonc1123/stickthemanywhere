@@ -379,3 +379,62 @@ export const seedPokemonBase = mutation({
     }
   },
 });
+
+// ─── Tier 3 Canonical Test Pack ──────────────────────────────────────────────
+// Purpose: validate 3-tier taxonomy end-to-end (category → subcategory → group)
+// Safe to run in both Development and Production — fully idempotent.
+//
+// Tier 1 (Category):  POK  "Pokémon"
+// Tier 2 (Subcategory): LEG  "Legendaries"
+// Tier 3 (Groups):    MYTHICAL, ULTRA-BEAST, TRIOS
+//   MYTHICAL    → 3 stickers (tests multiple stickers in one group)
+//   ULTRA-BEAST → 2 stickers (tests group filtering)
+//   TRIOS       → 0 stickers (tests empty group rendering)
+// ─────────────────────────────────────────────────────────────────────────────
+export const seedTier3TestPack = mutation({
+  handler: async (ctx) => {
+    // Tier 1 — Category
+    await upsertCategory(ctx, "POK", "Pokémon", 26);
+
+    // Tier 2 — Subcategory
+    await upsertSubcategory(ctx, "POK", "LEG", "Legendaries", 1);
+
+    // Tier 3 — Groups (one belongs to exactly one subcategory: LEG)
+    await upsertGroup(ctx, "LEG", "MYTHICAL",    "Mythical",          1);
+    await upsertGroup(ctx, "LEG", "ULTRA-BEAST", "Ultra Beast",       2);
+    await upsertGroup(ctx, "LEG", "TRIOS",       "Legendary Trios",   3); // intentionally empty
+
+    // Stickers — real content rows, not taxonomy placeholders
+    // Three stickers in MYTHICAL (tests multiple stickers per group)
+    await upsertSticker(ctx, "LEG-001", "Mew",      "POK", "LEG", 1, "LEG-001.png", 4.00);
+    await upsertSticker(ctx, "LEG-002", "Celebi",   "POK", "LEG", 2, "LEG-002.png", 4.00);
+    await upsertSticker(ctx, "LEG-003", "Jirachi",  "POK", "LEG", 3, "LEG-003.png", 4.00);
+
+    // Two stickers in ULTRA-BEAST (tests group filtering)
+    await upsertSticker(ctx, "LEG-004", "Buzzwole",   "POK", "LEG", 4, "LEG-004.png", 4.00);
+    await upsertSticker(ctx, "LEG-005", "Pheromosa",  "POK", "LEG", 5, "LEG-005.png", 4.00);
+
+    // stickerGroupLinks — wire stickers to their groups
+    await upsertStickerGroupLink(ctx, "LEG-001", "MYTHICAL");
+    await upsertStickerGroupLink(ctx, "LEG-002", "MYTHICAL");
+    await upsertStickerGroupLink(ctx, "LEG-003", "MYTHICAL");
+    await upsertStickerGroupLink(ctx, "LEG-004", "ULTRA-BEAST");
+    await upsertStickerGroupLink(ctx, "LEG-005", "ULTRA-BEAST");
+    // TRIOS has no links — empty group is the test case
+
+    return {
+      category:    "POK",
+      subcategory: "LEG",
+      groups:      ["MYTHICAL", "ULTRA-BEAST", "TRIOS"],
+      stickers:    ["LEG-001", "LEG-002", "LEG-003", "LEG-004", "LEG-005"],
+      links: [
+        "LEG-001 → MYTHICAL",
+        "LEG-002 → MYTHICAL",
+        "LEG-003 → MYTHICAL",
+        "LEG-004 → ULTRA-BEAST",
+        "LEG-005 → ULTRA-BEAST",
+        "TRIOS   → (empty)",
+      ],
+    };
+  },
+});
