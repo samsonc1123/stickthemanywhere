@@ -1,19 +1,23 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+
 export const finalizeStickerUpload = mutation({
   args: {
     storageId: v.id("_storage"),
     name: v.string(),
-    // kept for backwards compatibility, but we will NOT trust it:
     categoryCode: v.optional(v.string()),
     subcategoryCode: v.string(),
     filename: v.string(),
   },
+
   handler: async (ctx, args) => {
     const subcategoryCode = args.subcategoryCode.trim().toUpperCase();
-    if (!subcategoryCode) throw new Error("subcategoryCode is required.");
 
-    // 1) Subcategory must exist (authoritative)
+    if (!subcategoryCode) {
+      throw new Error("subcategoryCode is required.");
+    }
+
+    // 1 — Validate subcategory exists
     const subcat = await ctx.db
       .query("subcategories")
       .withIndex("by_code", (q) => q.eq("code", subcategoryCode))
@@ -23,34 +27,49 @@ export const finalizeStickerUpload = mutation({
       throw new Error(`Subcategory code "${subcategoryCode}" does not exist.`);
     }
 
-    // 2) Hard-block obvious bucket/test rows from ever becoming stickers
-    // (taxonomy nodes must never be content)
+    // 2 — Block taxonomy bucket/test uploads
     const filenameUpper = args.filename.toUpperCase();
-    if (filenameUpper.includes("-GEN-") || filenameUpper.includes("-LGD-") || filenameUpper.includes("-TEST-")) {
-      throw new Error(`Bucket/test filenames are not allowed as stickers: "${args.filename}"`);
+
+    if (
+      filenameUpper.includes("-GEN-") ||
+      filenameUpper.includes("-LGD-") ||
+      filenameUpper.includes("-TEST-")
+    ) {
+      throw new Error(
+        `Bucket/test filenames are not allowed as stickers: "${args.filename}"`
+      );
     }
 
-    // 3) Filename must start with exact subcategoryCode + "-" (strong prefix validation)
-    // e.g. "ANI-BUTTERFLIES-00001.png" => starts with "ANI-BUTTERFLIES-"
+    // 3 — Enforce filename prefix
     const nameOnly = args.filename.replace(/\.(png|webp)$/i, "");
     const nameOnlyUpper = nameOnly.toUpperCase();
     const requiredPrefix = `${subcat.code}-`;
+
     if (!nameOnlyUpper.startsWith(requiredPrefix)) {
-      throw new Error(`Filename must start with "${requiredPrefix}" (got "${args.filename}").`);
+      throw new Error(
+        `Filename must start with "${requiredPrefix}" (got "${args.filename}").`
+      );
     }
 
-    // 4) Idempotency: same storageId => return existing
+    // 4 — Idempotency check
     const existingByStorage = await ctx.db
       .query("stickers")
       .filter((q) => q.eq(q.field("storageId"), args.storageId))
       .unique();
+
     if (existingByStorage) {
-      return { id: existingByStorage._id, code: existingByStorage.code, alreadyExists: true };
+      return {
+        id: existingByStorage._id,
+        code: existingByStorage.code,
+        alreadyExists: true,
+      };
     }
 
-    // 5) Generate next per-prefix sequential code
-    const prefix = subcat.code; // e.g. "ANI-BUTTERFLIES"
+    // 5 — Generate sequential code
+    const prefix = subcat.code;
+
     const allStickers = await ctx.db.query("stickers").collect();
+
     const matchingNums = allStickers
       .filter((s) => typeof s.code === "string" && s.code.startsWith(prefix))
       .map((s) => {
@@ -59,19 +78,24 @@ export const finalizeStickerUpload = mutation({
       });
 
     const nextNum = matchingNums.length ? Math.max(...matchingNums) + 1 : 1;
+
     const code = `${prefix}${String(nextNum).padStart(5, "0")}`;
 
-    // 6) Final uniqueness check
+    // 6 — Final uniqueness check
     const dupe = await ctx.db
       .query("stickers")
       .withIndex("by_code", (q) => q.eq("code", code))
       .unique();
-    if (dupe) throw new Error(`Sticker code ${code} already exists. Please retry.`);
 
-    // 7) Authoritative categoryCode derived from subcat (never trust client)
+    if (dupe) {
+      throw new Error(`Sticker code ${code} already exists. Please retry.`);
+    }
+
+    // 7 — Authoritative category
     const derivedCategoryCode = subcat.categoryCode;
 
     const now = Date.now();
+
     const id = await ctx.db.insert("stickers", {
       code,
       name: args.name,
@@ -86,6 +110,10 @@ export const finalizeStickerUpload = mutation({
       updatedAt: now,
     });
 
-    return { id, code, alreadyExists: false };
+    return {
+      id,
+      code,
+      alreadyExists: false,
+    };
   },
 });
