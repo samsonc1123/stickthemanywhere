@@ -8,25 +8,30 @@ export const getGroupsBySubcategory = query({
     onlyActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    let q = ctx.db
-      .query("groups")
-      .withIndex("by_subcategory", (q) => q.eq("subcategoryCode", args.subcategoryCode));
-    
-    const results = await q.collect();
-    
-    const unique = new Map();
-    for (const g of results) {
-      // Normalize to UPPERCASE and HYPHENS
-      const normalizedCode = g.code.toUpperCase().replace(/_/g, '-');
-      if (!unique.has(normalizedCode)) {
-        unique.set(normalizedCode, g);
+    const stickers = await ctx.db
+      .query("stickers")
+      .withIndex("by_subcategory", (q) =>
+        q.eq("subcategoryCode", args.subcategoryCode)
+      )
+      .collect();
+
+    const stickerCodes = new Set(stickers.map((s) => s.code));
+
+    const links = await ctx.db.query("stickerGroupLinks").collect();
+
+    const groupCodes = new Set<string>();
+    for (const link of links) {
+      if (stickerCodes.has(link.stickerCode)) {
+        groupCodes.add(link.groupCode);
       }
     }
-    
-    let filtered = Array.from(unique.values());
-    if (args.onlyActive) {
-      filtered = filtered.filter((g) => g.isActive);
-    }
-    return filtered;
+
+    const groups = await ctx.db.query("groups").collect();
+
+    const results = groups.filter((g) => groupCodes.has(g.code));
+
+    return args.onlyActive
+      ? results.filter((g) => g.isActive)
+      : results;
   },
 });

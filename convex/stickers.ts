@@ -1,3 +1,5 @@
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
 export const finalizeStickerUpload = mutation({
   args: {
     storageId: v.id("_storage"),
