@@ -28,7 +28,11 @@ export const getGroupsBySubcategory = query({
 
     const groups = await ctx.db.query("groups").collect();
 
-    const results = groups.filter((g) => groupCodes.has(g.code));
+    const results = groups.filter(
+      (g) =>
+        g.subcategoryCode === args.subcategoryCode &&
+        groupCodes.has(g.code)
+    );
 
     return args.onlyActive
       ? results.filter((g) => g.isActive)
