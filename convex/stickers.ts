@@ -1,6 +1,35 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+export const getStickerCountsByGroupCodes = query({
+  args: {
+    groupCodes: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const counts: Record<string, number> = {};
+    for (const code of args.groupCodes) {
+      counts[code] = 0;
+    }
+    const links = await ctx.db.query("stickerGroupLinks").collect();
+    for (const link of links) {
+      if (link.groupCode in counts) {
+        counts[link.groupCode] += 1;
+      }
+    }
+    return counts;
+  },
+});
+
+export const listAllStickers = query({
+  args: {},
+  handler: async (ctx) => {
+    const stickers = await ctx.db.query("stickers").collect();
+    return stickers
+      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+      .slice(0, 100);
+  },
+});
+
 export const finalizeStickerUpload = mutation({
   args: {
     storageId: v.id("_storage"),

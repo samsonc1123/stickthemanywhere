@@ -8,31 +8,12 @@ export const getGroupsBySubcategory = query({
     onlyActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const stickers = await ctx.db
-      .query("stickers")
+    const results = await ctx.db
+      .query("groups")
       .withIndex("by_subcategory", (q) =>
         q.eq("subcategoryCode", args.subcategoryCode)
       )
       .collect();
-
-    const stickerCodes = new Set(stickers.map((s) => s.code));
-
-    const links = await ctx.db.query("stickerGroupLinks").collect();
-
-    const groupCodes = new Set<string>();
-    for (const link of links) {
-      if (stickerCodes.has(link.stickerCode)) {
-        groupCodes.add(link.groupCode);
-      }
-    }
-
-    const groups = await ctx.db.query("groups").collect();
-
-    const results = groups.filter(
-      (g) =>
-        g.subcategoryCode === args.subcategoryCode &&
-        groupCodes.has(g.code)
-    );
 
     return args.onlyActive
       ? results.filter((g) => g.isActive)
