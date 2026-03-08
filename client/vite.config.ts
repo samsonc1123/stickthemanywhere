@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: "all",
+    allowedHosts: true,
   },
   build: {
     outDir: "dist",
