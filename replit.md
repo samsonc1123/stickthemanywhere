@@ -28,9 +28,29 @@ Logic: Only homepage says "Browse Categories" since users browse from there. Cat
 
 ## System Architecture
 
+### Runtime
+- **Default Runtime**: Bun 1.2 (replaces Node.js/npm)
+- **Package Manager**: Bun (lockfile: `bun.lockb` at repo root, `client/bun.lockb` in client)
+- **No npm, no npx**: use `bun`, `bun run`, `bunx` everywhere
+
+### Development Commands
+```bash
+# Install dependencies (run in both root and client/)
+bun install
+
+# Start frontend dev server (Replit workflow)
+cd client && bunx vite --port 5000 --host 0.0.0.0
+
+# Run Convex backend in watch mode
+bunx convex dev
+
+# Deploy Convex to production
+bunx convex deploy
+```
+
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
+- **Build Tool**: Vite (served directly, no Express layer in dev)
 - **Routing**: Wouter
 - **State Management**: React hooks with local storage for cart persistence
 - **Data Fetching**: TanStack React Query
@@ -39,10 +59,11 @@ Logic: Only homepage says "Browse Categories" since users browse from there. Cat
 - **UI/UX Decisions**: Dark theme with a neon color palette, 3D hover effects, glow animations, responsive grid layouts, and custom typography. Specific design elements include animated starfield backgrounds, subcategory bars with cycling neon colors, and custom header components with bouncing animations. Responsive design includes specific sizing for iPhone/iPad and adaptive grid layouts.
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js
+- **Runtime**: Bun 1.2 (native TypeScript, replaces Node.js + tsx)
+- **Convex**: Primary backend (queries, mutations, actions, file storage)
+- **Express.js**: Legacy server kept for build/production serving only
 - **Database**: PostgreSQL with Drizzle ORM
-- **API Design**: RESTful API for products, categories, and orders.
-- **Development**: TypeScript with ESBuild for bundling.
+- **Development**: TypeScript runs natively in Bun without tsx
 
 ### Data Storage Strategy
 - **Primary Database**: PostgreSQL (currently Neon, migrating to Supabase).
