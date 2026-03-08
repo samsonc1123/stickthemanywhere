@@ -380,6 +380,33 @@ export const seedPokemonBase = mutation({
   },
 });
 
+// Links POK-TYP00001 (uploaded sticker) → FIRE group. Idempotent.
+export const linkPokTypFireSticker = mutation({
+  handler: async (ctx) => {
+    const stickerCode = "POK-TYP00001";
+    const groupCode = "FIRE";
+
+    const existing = await ctx.db
+      .query("stickerGroupLinks")
+      .withIndex("by_sticker", (q: any) => q.eq("stickerCode", stickerCode))
+      .collect();
+
+    const alreadyLinked = existing.some((l: any) => l.groupCode === groupCode);
+    if (alreadyLinked) {
+      return { status: "already linked", stickerCode, groupCode };
+    }
+
+    await ctx.db.insert("stickerGroupLinks", {
+      stickerCode,
+      groupCode,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return { status: "linked", stickerCode, groupCode };
+  },
+});
+
 // ─── Tier 3 Canonical Test Pack ──────────────────────────────────────────────
 // Purpose: validate 3-tier taxonomy end-to-end (category → subcategory → group)
 // Safe to run in both Development and Production — fully idempotent.
