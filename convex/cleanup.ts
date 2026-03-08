@@ -203,6 +203,60 @@ export const cleanupTaxonomy = mutation({
   },
 });
 
+// Merges the duplicate POK category into canonical POKEMON.
+// Safe to re-run — idempotent (no-ops if POK is already gone).
+export const fixDuplicatePokemonCategory = mutation({
+  handler: async (ctx) => {
+    const result = {
+      subcategoriesReassigned: 0,
+      stickersReassigned: 0,
+      stickerLinksReassigned: 0,
+      categoryDeleted: false,
+    };
+
+    // 1 — Confirm canonical POKEMON exists
+    const canonical = await ctx.db
+      .query("categories")
+      .withIndex("by_code", (q) => q.eq("code", "POKEMON"))
+      .unique();
+    if (!canonical) throw new Error("Canonical POKEMON category not found.");
+
+    // 2 — Find the duplicate POK category
+    const duplicate = await ctx.db
+      .query("categories")
+      .withIndex("by_code", (q) => q.eq("code", "POK"))
+      .unique();
+    if (!duplicate) {
+      return { ...result, note: "POK category not found — already clean." };
+    }
+
+    // 3 — Reassign subcategories: categoryCode POK → POKEMON
+    const subcats = await ctx.db
+      .query("subcategories")
+      .withIndex("by_category", (q) => q.eq("categoryCode", "POK"))
+      .collect();
+    for (const sub of subcats) {
+      await ctx.db.patch(sub._id, { categoryCode: "POKEMON" });
+      result.subcategoriesReassigned++;
+    }
+
+    // 4 — Reassign stickers: categoryCode POK → POKEMON
+    const stickers = await ctx.db.query("stickers").collect();
+    for (const sticker of stickers) {
+      if (sticker.categoryCode === "POK") {
+        await ctx.db.patch(sticker._id, { categoryCode: "POKEMON" });
+        result.stickersReassigned++;
+      }
+    }
+
+    // 5 — Delete the duplicate POK category
+    await ctx.db.delete(duplicate._id);
+    result.categoryDeleted = true;
+
+    return result;
+  },
+});
+
 export const migrateGroupLinks = mutation({
   handler: async (ctx) => {
     const CODE_MAP: Record<string, string> = {
