@@ -1,6 +1,39 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+export const getStickersByGroupCode = query({
+  args: {
+    groupCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const groupCode = args.groupCode.trim().toUpperCase();
+
+    const links = await ctx.db
+      .query("stickerGroupLinks")
+      .withIndex("by_group", (q) => q.eq("groupCode", groupCode))
+      .collect();
+
+    const results = [];
+    for (const link of links) {
+      const sticker = await ctx.db
+        .query("stickers")
+        .withIndex("by_code", (q) => q.eq("code", link.stickerCode))
+        .unique();
+
+      if (!sticker || !sticker.isActive) continue;
+
+      let imageUrl: string | null = null;
+      if (sticker.storageId) {
+        imageUrl = await ctx.storage.getUrl(sticker.storageId);
+      }
+
+      results.push({ ...sticker, imageUrl });
+    }
+
+    return results;
+  },
+});
+
 export const getStickerCountsByGroupCodes = query({
   args: {
     groupCodes: v.array(v.string()),
