@@ -27,7 +27,6 @@ export default function AdminUploader() {
   const [subcategoryCode, setSubcategoryCode] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
-  const [prefixWarning, setPrefixWarning] = useState<string | null>(null);
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -37,7 +36,6 @@ export default function AdminUploader() {
     api.subcategories.getSubcategoriesByCategory,
     categoryCode ? { categoryCode } : "skip"
   ) ?? [];
-  const allPrefixes = useQuery(api.uploads.listAllPrefixes) ?? [];
   const recentStickerData = useQuery(api.stickers.listAllStickers) ?? [];
 
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
@@ -57,14 +55,6 @@ export default function AdminUploader() {
   const handleCategoryChange = (code: string) => {
     setCategoryCode(code);
     setSubcategoryCode('');
-    setPrefixWarning(null);
-  };
-
-  const extractPrefix = (filename: string): string | null => {
-    const nameOnly = filename.replace(/\.(png|webp)$/i, '');
-    const match = nameOnly.match(/^([A-Za-z-]+)/);
-    if (!match) return null;
-    return match[1].toUpperCase();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,20 +78,6 @@ export default function AdminUploader() {
       return;
     }
 
-    if (selectedFiles.length > 0 && allPrefixes.length > 0) {
-      const firstPrefix = extractPrefix(selectedFiles[0].name);
-      if (firstPrefix) {
-        const matched = allPrefixes.find(p => p.prefix === firstPrefix);
-        if (matched) {
-          setCategoryCode(matched.categoryCode);
-          setSubcategoryCode(matched.subcategoryCode);
-          setPrefixWarning(null);
-        } else {
-          setPrefixWarning(`Prefix "${firstPrefix}" from "${selectedFiles[0].name}" does not match any subcategory code.`);
-        }
-      }
-    }
-
     setFiles(selectedFiles);
   };
 
@@ -116,18 +92,6 @@ export default function AdminUploader() {
     if (!categoryCode || !subcategoryCode) {
       toast({ title: 'Error', description: 'Please select a category and subcategory', variant: 'destructive' });
       return;
-    }
-
-    for (const file of files) {
-      const filePrefix = extractPrefix(file.name);
-      if (filePrefix && filePrefix !== subcategoryCode.toUpperCase()) {
-        toast({
-          title: 'Prefix Mismatch',
-          description: `File "${file.name}" has prefix "${filePrefix}" but subcategory "${subcategoryCode}" is selected. Prefix must match.`,
-          variant: 'destructive',
-        });
-        return;
-      }
     }
 
     setIsUploading(true);
@@ -264,9 +228,6 @@ export default function AdminUploader() {
                     ? `Selected: ${files[0].name}`
                     : `Selected ${files.length} files`}
                 </p>
-              )}
-              {prefixWarning && (
-                <p className="text-sm text-yellow-400 mt-1">{prefixWarning}</p>
               )}
             </div>
 

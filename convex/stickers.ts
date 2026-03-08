@@ -56,31 +56,7 @@ export const finalizeStickerUpload = mutation({
       throw new Error(`Subcategory code "${subcategoryCode}" does not exist.`);
     }
 
-    // 2 — Block taxonomy bucket/test uploads
-    const filenameUpper = args.filename.toUpperCase();
-
-    if (
-      filenameUpper.includes("-GEN-") ||
-      filenameUpper.includes("-LGD-") ||
-      filenameUpper.includes("-TEST-")
-    ) {
-      throw new Error(
-        `Bucket/test filenames are not allowed as stickers: "${args.filename}"`
-      );
-    }
-
-    // 3 — Enforce filename prefix
-    const nameOnly = args.filename.replace(/\.(png|webp)$/i, "");
-    const nameOnlyUpper = nameOnly.toUpperCase();
-    const requiredPrefix = `${subcat.code}-`;
-
-    if (!nameOnlyUpper.startsWith(requiredPrefix)) {
-      throw new Error(
-        `Filename must start with "${requiredPrefix}" (got "${args.filename}").`
-      );
-    }
-
-    // 4 — Idempotency check
+    // 2 — Idempotency check
     const existingByStorage = await ctx.db
       .query("stickers")
       .filter((q) => q.eq(q.field("storageId"), args.storageId))
@@ -94,7 +70,7 @@ export const finalizeStickerUpload = mutation({
       };
     }
 
-    // 5 — Generate sequential code
+    // 3 — Generate sequential code
     const prefix = subcat.code;
 
     const allStickers = await ctx.db.query("stickers").collect();
@@ -110,7 +86,7 @@ export const finalizeStickerUpload = mutation({
 
     const code = `${prefix}${String(nextNum).padStart(5, "0")}`;
 
-    // 6 — Final uniqueness check
+    // 4 — Final uniqueness check
     const dupe = await ctx.db
       .query("stickers")
       .withIndex("by_code", (q) => q.eq("code", code))
@@ -120,7 +96,7 @@ export const finalizeStickerUpload = mutation({
       throw new Error(`Sticker code ${code} already exists. Please retry.`);
     }
 
-    // 7 — Authoritative category
+    // 5 — Authoritative category
     const derivedCategoryCode = subcat.categoryCode;
 
     const now = Date.now();
