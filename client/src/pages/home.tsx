@@ -58,7 +58,7 @@ export default function Home() {
         <meta property="og:description" content="Express yourself with our premium neon stickers. Waterproof, UV resistant and perfect for laptops, water bottles, and more." />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@300;400;500&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
       </Helmet>
-      
+
       <div className="home-container">
         <div className="starfield"></div>
 
@@ -72,7 +72,7 @@ export default function Home() {
 
         <h2 className="browse-text">Browse Categories</h2>
 
-          {/* 4. Horizontal scrolling category buttons with different neon colors */}
+          {/* Horizontal scrolling category buttons with different neon colors */}
           <div className="category-strip">
             {categories.map((category, index) => {
               const isChristian = category.id === 'CHR';
@@ -89,7 +89,7 @@ export default function Home() {
             })}
           </div>
 
-          {/* 5. Square sticker display boxes with blue neon outlines */}
+          {/* Square sticker display boxes with blue neon outlines */}
           <div className="sticker-gallery">
             {[...Array(6)].map((_, index) => (
               <div key={index} className="sticker-box">
@@ -107,7 +107,7 @@ export default function Home() {
               Loading categories...
             </div>
           )}
-          
+
       </div>
     </>
   );
