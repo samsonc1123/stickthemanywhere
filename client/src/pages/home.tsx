@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Cross, Heart, Star, Gamepad2, TreePine, Sparkles, Zap } from "lucide-react";
 import { Helmet } from "react-helmet";
+import { useEffect, useRef } from "react";
 
 interface Category {
   id: string;
@@ -15,6 +16,9 @@ interface Category {
     slug: string;
   }>;
 }
+
+const SCROLL_KEY = "home_scroll_y";
+const STRIP_SCROLL_KEY = "home_strip_scroll_x";
 
 const getCategoryIcon = (categorySlug: string) => {
   switch (categorySlug) {
@@ -37,7 +41,7 @@ const getCategoryIcon = (categorySlug: string) => {
 
 const neonColors = [
   'neon-pink',
-  'neon-blue', 
+  'neon-blue',
   'neon-yellow',
   'neon-green',
   'neon-purple',
@@ -48,6 +52,50 @@ export default function Home() {
   const { data: categories = [], isLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
+
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const savedY = sessionStorage.getItem(SCROLL_KEY);
+    const savedX = sessionStorage.getItem(STRIP_SCROLL_KEY);
+
+    if (savedY !== null) {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: parseInt(savedY, 10), behavior: 'instant' });
+      });
+    }
+
+    if (savedX !== null && stripRef.current) {
+      requestAnimationFrame(() => {
+        if (stripRef.current) {
+          stripRef.current.scrollLeft = parseInt(savedX, 10);
+        }
+      });
+    }
+
+    const handleWindowScroll = () => {
+      sessionStorage.setItem(SCROLL_KEY, String(Math.round(window.scrollY)));
+    };
+
+    const handleStripScroll = () => {
+      if (stripRef.current) {
+        sessionStorage.setItem(STRIP_SCROLL_KEY, String(Math.round(stripRef.current.scrollLeft)));
+      }
+    };
+
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    const strip = stripRef.current;
+    if (strip) {
+      strip.addEventListener('scroll', handleStripScroll, { passive: true });
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleWindowScroll);
+      if (strip) {
+        strip.removeEventListener('scroll', handleStripScroll);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -72,13 +120,13 @@ export default function Home() {
 
         <h2 className="browse-text">Browse Categories</h2>
 
-          {/* Horizontal scrolling category buttons with different neon colors */}
-          <div className="category-strip">
-            {categories.map((category, index) => {
-              const isChristian = category.id === 'CHR';
-              return (
+        {/* Horizontal scrolling category buttons with different neon colors */}
+        <div className="category-strip" ref={stripRef}>
+          {categories.map((category, index) => {
+            const isChristian = category.id === 'CHR';
+            return (
               <Link key={category.id} href={isChristian ? '/christian' : category.slug === 'pokemon' ? '/pokemon' : `/category/${category.slug}`}>
-                <button 
+                <button
                   className={`category-btn ${isChristian ? 'category-btn-gold' : neonColors[index % neonColors.length]}`}
                 >
                   {getCategoryIcon(category.slug)}
@@ -86,27 +134,27 @@ export default function Home() {
                 </button>
               </Link>
             );
-            })}
-          </div>
+          })}
+        </div>
 
-          {/* Square sticker display boxes with blue neon outlines */}
-          <div className="sticker-gallery">
-            {[...Array(6)].map((_, index) => (
-              <div key={index} className="sticker-box">
-                <div className="text-gray-400 text-center">
-                  <div className="text-4xl mb-2 text-blue-400">🔷</div>
-                  <p className="text-sm">Sticker {index + 1}</p>
-                </div>
+        {/* Square sticker display boxes with blue neon outlines */}
+        <div className="sticker-gallery">
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="sticker-box">
+              <div className="text-gray-400 text-center">
+                <div className="text-4xl mb-2 text-blue-400">🔷</div>
+                <p className="text-sm">Sticker {index + 1}</p>
               </div>
-            ))}
-          </div>
-
-          {/* Loading state */}
-          {isLoading && (
-            <div className="text-center text-gray-400 py-8">
-              Loading categories...
             </div>
-          )}
+          ))}
+        </div>
+
+        {/* Loading state */}
+        {isLoading && (
+          <div className="text-center text-gray-400 py-8">
+            Loading categories...
+          </div>
+        )}
 
       </div>
     </>
