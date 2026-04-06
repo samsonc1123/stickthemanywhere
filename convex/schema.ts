@@ -6,6 +6,8 @@ import { authTables } from "@convex-dev/auth/server";
 export default defineSchema({
   ...authTables,
 
+  // ─── Legacy 3-tier flat tables (untouched) ────────────────────────────────
+
   categories: defineTable({
     code: v.string(),
     name: v.string(),
@@ -71,4 +73,44 @@ export default defineSchema({
   })
     .index("by_sticker", ["stickerCode"])
     .index("by_group", ["groupCode"]),
+
+  // ─── Taxonomy Engine: recursive, infinitely nestable ─────────────────────
+  //
+  // Each node can be any tier: domain → category → subcategory → group →
+  // attribute → … The `type` field is the semantic label; parentId creates
+  // the tree. Root nodes have no parentId.
+  //
+  // De-duplication key: (parentId, slug) is unique per tree level.
+
+  taxonomy: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    parentId: v.optional(v.id("taxonomy")),
+    type: v.union(
+      v.literal("domain"),
+      v.literal("category"),
+      v.literal("subcategory"),
+      v.literal("group"),
+      v.literal("attribute"),
+    ),
+    isActive: v.boolean(),
+    sortOrder: v.optional(v.number()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_parent", ["parentId"])
+    .index("by_type", ["type"])
+    .index("by_parent_slug", ["parentId", "slug"]),
+
+  // Junction: one sticker can belong to many taxonomy nodes
+  stickerTaxonomyLinks: defineTable({
+    stickerId: v.id("stickers"),
+    taxonomyId: v.id("taxonomy"),
+    createdAt: v.number(),
+  })
+    .index("by_sticker", ["stickerId"])
+    .index("by_taxonomy", ["taxonomyId"])
+    .index("by_sticker_taxonomy", ["stickerId", "taxonomyId"]),
 });
