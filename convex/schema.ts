@@ -95,6 +95,7 @@ export default defineSchema({
     ),
     isActive: v.boolean(),
     sortOrder: v.optional(v.number()),
+    numericalWeight: v.optional(v.number()),
     metadata: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -102,7 +103,8 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_parent", ["parentId"])
     .index("by_type", ["type"])
-    .index("by_parent_slug", ["parentId", "slug"]),
+    .index("by_parent_slug", ["parentId", "slug"])
+    .index("by_numerical_weight", ["numericalWeight"]),
 
   // Junction: one sticker can belong to many taxonomy nodes
   stickerTaxonomyLinks: defineTable({
