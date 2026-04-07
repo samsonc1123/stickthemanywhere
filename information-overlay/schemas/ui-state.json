@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toolbox-core/information-overlay/schemas/ui-state.json",
+  "title": "Pre-noetic Atmospheric Conditions — UI State",
+  "description": "Tracks user slider positions and derived display state for the Pre-noetic Atmospheric Conditions information overlay. Each slider maps to a physics-engine input variable. Persisted to localStorage under the key 'gab:atmosphere:ui-state'.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["sliders", "meta"],
+
+  "properties": {
+
+    "sliders": {
+      "type": "object",
+      "description": "Current position of each atmosphere control slider.",
+      "required": ["pressure", "oxygen", "radiation", "canopy"],
+      "additionalProperties": false,
+
+      "properties": {
+
+        "pressure": {
+          "type": "object",
+          "description": "Total sea-level barometric pressure slider.",
+          "required": ["value", "min", "max", "step", "unit"],
+          "properties": {
+            "value":  { "type": "number", "description": "Current slider value in Pa.", "default": 101325 },
+            "min":    { "type": "number", "description": "Minimum Pa (0.5 atm — high-altitude equivalent).", "default": 50662 },
+            "max":    { "type": "number", "description": "Maximum Pa (~4 atm — estimated max canopy scenario).", "default": 405300 },
+            "step":   { "type": "number", "description": "Slider step increment in Pa.", "default": 1000 },
+            "unit":   { "type": "string", "enum": ["Pa", "atm", "bar", "mmHg"], "default": "Pa" },
+            "displayValue": {
+              "type": "number",
+              "description": "Converted value in the selected display unit (computed from value + unit).",
+              "readOnly": true
+            }
+          }
+        },
+
+        "oxygen": {
+          "type": "object",
+          "description": "O2 mole fraction slider (Dalton's Law input).",
+          "required": ["value", "min", "max", "step", "unit"],
+          "properties": {
+            "value":  { "type": "number", "description": "O2 fraction (0–1). Modern = 0.2095.", "default": 0.2095, "minimum": 0.05, "maximum": 0.50 },
+            "min":    { "type": "number", "default": 0.05 },
+            "max":    { "type": "number", "default": 0.50 },
+            "step":   { "type": "number", "default": 0.005 },
+            "unit":   { "type": "string", "enum": ["fraction", "percent"], "default": "percent" },
+            "displayValue": {
+              "type": "number",
+              "description": "Value expressed as a percentage if unit=percent, otherwise raw fraction.",
+              "readOnly": true
+            }
+          }
+        },
+
+        "radiation": {
+          "type": "object",
+          "description": "Radiation index override slider. 1.0 = modern ambient. Lower = more shielded.",
+          "required": ["value", "min", "max", "step", "unit"],
+          "properties": {
+            "value":  { "type": "number", "description": "Radiation index relative to modern (1.0).", "default": 1.0, "minimum": 0.0, "maximum": 2.0 },
+            "min":    { "type": "number", "default": 0.0 },
+            "max":    { "type": "number", "default": 2.0 },
+            "step":   { "type": "number", "default": 0.01 },
+            "unit":   { "type": "string", "enum": ["index", "percent-of-modern"], "default": "index" },
+            "locked": {
+              "type": "boolean",
+              "description": "When true, radiation is auto-computed from pressure (physics engine) and the slider is read-only.",
+              "default": true
+            }
+          }
+        },
+
+        "canopy": {
+          "type": "object",
+          "description": "Canopy weight slider — the primary input to the barometric pressure calculation.",
+          "required": ["value", "min", "max", "step", "unit"],
+          "properties": {
+            "value":  { "type": "number", "description": "Water-equivalent canopy mass in kg/m². 0 = no canopy (modern). ~1600 = Dillow estimate.", "default": 0, "minimum": 0 },
+            "min":    { "type": "number", "default": 0 },
+            "max":    { "type": "number", "description": "~3 atm additional pressure scenario.", "default": 3000 },
+            "step":   { "type": "number", "default": 10 },
+            "unit":   { "type": "string", "enum": ["kg/m²", "lb/ft²"], "default": "kg/m²" },
+            "presets": {
+              "type": "array",
+              "description": "Named quick-select preset positions for the canopy slider.",
+              "items": {
+                "type": "object",
+                "required": ["label", "value"],
+                "properties": {
+                  "label": { "type": "string" },
+                  "value": { "type": "number" },
+                  "note":  { "type": "string" }
+                }
+              },
+              "default": [
+                { "label": "Modern",   "value": 0,    "note": "No canopy — present-day baseline." },
+                { "label": "Light",    "value": 400,  "note": "~0.4 atm additional pressure." },
+                { "label": "Dillow",   "value": 1600, "note": "Classic creationist canopy estimate (Dillow 1981)." },
+                { "label": "Vardiman", "value": 2500, "note": "Higher-pressure variant (Vardiman 1994)." },
+                { "label": "Maximum",  "value": 3000, "note": "Upper bound for this model." }
+              ]
+            }
+          }
+        }
+
+      }
+    },
+
+    "derived": {
+      "type": "object",
+      "description": "Output values computed by the physics engine from current slider positions. Read-only — set by the engine, not the user.",
+      "readOnly": true,
+      "properties": {
+        "totalPressurePa":       { "type": "number" },
+        "totalPressureAtm":      { "type": "number" },
+        "o2PartialPressurePa":   { "type": "number" },
+        "o2PartialPressureMmHg": { "type": "number" },
+        "o2Classification":      { "type": "string", "enum": ["hypoxic","normoxic","mildly-hyperoxic","hyperoxic","extreme-hyperoxic"] },
+        "radiationIndex":        { "type": "number" },
+        "radiationReductionPct": { "type": "number" },
+        "shieldingTier":         { "type": "string", "enum": ["none","moderate","strong","extreme"] }
+      }
+    },
+
+    "meta": {
+      "type": "object",
+      "description": "Session and taxonomy linkage metadata.",
+      "required": ["taxonomyDomain", "lastUpdated"],
+      "properties": {
+        "taxonomyDomain": {
+          "type": "string",
+          "description": "GAB taxonomy domain this overlay belongs to.",
+          "const": "HISTORICAL-PHYSICS"
+        },
+        "taxonomySlug": {
+          "type": "string",
+          "description": "Slug of the GAB taxonomy node.",
+          "const": "historical-physics"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of the last slider interaction."
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Optional session identifier for multi-user overlays."
+        },
+        "activePreset": {
+          "type": "string",
+          "description": "Label of the currently active canopy preset, if any."
+        }
+      }
+    }
+
+  }
+}

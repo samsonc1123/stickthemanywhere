@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,11 +72,42 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "atmosphere-physics-engine",
+      "name": "Pre-noetic Atmospheric Conditions — Physics Engine",
+      "path": "../toolbox/tools/atmosphere/physics-engine.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "exports": [
+        "calculateCanopyPressure",
+        "calculateO2PartialPressure",
+        "calculateRadiationShielding",
+        "atmosphericSnapshot",
+        "MODERN_SEA_LEVEL_PRESSURE_PA",
+        "MODERN_O2_FRACTION",
+        "MODERN_RADIATION_INDEX"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "HISTORICAL-PHYSICS",
+      "uiSchema": "../information-overlay/schemas/ui-state.json",
+      "description": "Models pre-Flood atmospheric conditions from a vapor canopy weight variable. Computes sea-level barometric pressure (P = ρgh), O2 partial pressure (Dalton's Law), and radiation shielding index. References Dillow (1981) and Vardiman (1994) canopy estimates."
     }
   ],
   "agents": [],
   "pipelines": [],
-  "schemas": [],
+  "schemas": [
+    {
+      "id": "atmosphere-ui-state",
+      "name": "Pre-noetic Atmospheric Conditions — UI State",
+      "path": "../information-overlay/schemas/ui-state.json",
+      "version": "1.0.0",
+      "type": "schema",
+      "linkedTool": "atmosphere-physics-engine",
+      "persistenceKey": "gab:atmosphere:ui-state",
+      "description": "JSON Schema tracking user slider positions (Pressure, O2, Radiation, Canopy) and derived physics outputs for the atmosphere information overlay."
+    }
+  ],
   "convexMirrors": [
     {
       "convexModule": "convex/taxonomy.ts",
@@ -88,5 +119,58 @@
       "portableMirror": "../core-logic/engines.ts (calculateGematria, reduceToDigit)",
       "notes": "Identical letter tables and reduction algorithm. Safe to call on client without a Convex context."
     }
-  ]
+  ],
+  "gabTaxonomy": {
+    "description": "GAB (Sovereign Taxonomy) domain registrations for all toolbox systems.",
+    "domains": [
+      {
+        "name": "Historical Physics",
+        "code": "HISTORICAL-PHYSICS",
+        "slug": "historical-physics",
+        "type": "domain",
+        "parentSlug": null,
+        "dangerLevel": "safe",
+        "linkedTools": ["atmosphere-physics-engine"],
+        "linkedSchemas": ["atmosphere-ui-state"],
+        "description": "Pre-Flood and paleo-atmospheric physics models. Covers canopy hypothesis, barometric pressure differentials, hyperoxic environments, and radiation shielding under alternate atmospheric compositions.",
+        "nodes": [
+          {
+            "name": "Canopy Hypothesis",
+            "code": "CANOPY-HYPOTHESIS",
+            "slug": "canopy-hypothesis",
+            "type": "category",
+            "dangerLevel": "safe",
+            "sortOrder": 1
+          },
+          {
+            "name": "Barometric Pressure Models",
+            "code": "BAROMETRIC-PRESSURE-MODELS",
+            "slug": "barometric-pressure-models",
+            "type": "subcategory",
+            "parentSlug": "canopy-hypothesis",
+            "dangerLevel": "safe",
+            "sortOrder": 1
+          },
+          {
+            "name": "O2 Partial Pressure",
+            "code": "O2-PARTIAL-PRESSURE",
+            "slug": "o2-partial-pressure",
+            "type": "subcategory",
+            "parentSlug": "canopy-hypothesis",
+            "dangerLevel": "safe",
+            "sortOrder": 2
+          },
+          {
+            "name": "Radiation Shielding",
+            "code": "RADIATION-SHIELDING",
+            "slug": "radiation-shielding",
+            "type": "subcategory",
+            "parentSlug": "canopy-hypothesis",
+            "dangerLevel": "safe",
+            "sortOrder": 3
+          }
+        ]
+      }
+    ]
+  }
 }
