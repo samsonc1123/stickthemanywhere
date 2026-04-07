@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toolbox-core/high-spectral-veil/schemas/perception-config.json",
+  "title": "High-Spectral Veil — Perception Configuration",
+  "description": "Runtime toggles and tuning parameters for the High-Spectral Veil vision pipeline. Controls three primary perception modes plus anomaly detection sensitivity. Persisted to localStorage under the key 'gab:veil:perception-config'.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["modes", "spectralComposition", "anomalyDetection", "stream", "meta"],
+
+  "properties": {
+
+    "modes": {
+      "type": "object",
+      "description": "Three primary perception mode toggles. Modes are additive — multiple can be active simultaneously. The composite is rendered as a blended overlay.",
+      "required": ["spiritualEntityFocus", "uapTracker", "thermalGhosting"],
+      "additionalProperties": false,
+
+      "properties": {
+
+        "spiritualEntityFocus": {
+          "type": "object",
+          "description": "Unfiltered Mode — removes all software noise-reduction and post-processing filters. Preserves raw spectral data at full precision for visual patterns that standard processing pipelines discard.",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "label":   { "type": "string", "const": "Spiritual Entity Focus" },
+            "description": { "type": "string", "const": "Unfiltered Mode — all post-processing suppression disabled. Raw multi-band data at full sensor precision." },
+            "lutPreset": {
+              "type": "string",
+              "enum": ["NATURAL", "ENHANCED_CONTRAST", "GHOST_MODE"],
+              "default": "GHOST_MODE",
+              "description": "LUT applied in this mode. GHOST_MODE inverts luminance for negative-space rendering."
+            },
+            "noiseReductionDisabled": { "type": "boolean", "default": true },
+            "gainBoost": {
+              "type": "number",
+              "description": "Software gain multiplier applied uniformly to all channels. >1.0 amplifies weak signals.",
+              "minimum": 1.0,
+              "maximum": 8.0,
+              "default": 2.5
+            },
+            "channels": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["UV", "VIS", "NIR", "SWIR", "MWIR", "LWIR"] },
+              "default": ["UV", "NIR", "SWIR", "LWIR"],
+              "description": "Which bands feed into this mode's composite frame."
+            },
+            "phaseInversionAlert": {
+              "type": "boolean",
+              "default": true,
+              "description": "Surface PHASE_INVERSION anomaly events on the overlay when enabled."
+            }
+          }
+        },
+
+        "uapTracker": {
+          "type": "object",
+          "description": "UAP Tracker — Multi-Spectrum Contrast mode. Highlights objects that appear in two or more non-adjacent spectral bands simultaneously, or that exhibit velocity anomalies inconsistent with aerodynamic constraints.",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "label":   { "type": "string", "const": "UAP Tracker" },
+            "description": { "type": "string", "const": "Multi-Spectrum Contrast — cross-band object persistence and velocity anomaly detection." },
+            "lutPreset": {
+              "type": "string",
+              "enum": ["ENHANCED_CONTRAST", "UV_HIGHLIGHT"],
+              "default": "ENHANCED_CONTRAST"
+            },
+            "velocityThreshold": {
+              "type": "number",
+              "description": "Normalised motion magnitude (0–1) above which VELOCITY_EXCEED fires. Lower = more sensitive.",
+              "minimum": 0.05,
+              "maximum": 1.0,
+              "default": 0.35
+            },
+            "multiBandRequirement": {
+              "type": "integer",
+              "description": "Minimum number of spectral bands in which an object must simultaneously appear to be flagged for tracking.",
+              "minimum": 2,
+              "maximum": 6,
+              "default": 2
+            },
+            "trackingPersistenceFrames": {
+              "type": "integer",
+              "description": "Number of frames an anomaly must persist before a stable track is declared.",
+              "minimum": 1,
+              "maximum": 120,
+              "default": 5
+            },
+            "uvFlareAlert": { "type": "boolean", "default": true },
+            "velocityExceedAlert": { "type": "boolean", "default": true },
+            "multiBandAbsentAlert": { "type": "boolean", "default": true },
+            "highlightColor": {
+              "type": "string",
+              "description": "CSS hex color for bounding box overlay on tracked objects.",
+              "default": "#00f0ff"
+            }
+          }
+        },
+
+        "thermalGhosting": {
+          "type": "object",
+          "description": "Thermal Ghosting — Heat Displacement mode. Detects LWIR (thermal) signatures that are spatially or temporally displaced from their visible-spectrum counterpart — heat without a visible source, or residual thermal imprint after an object has moved.",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "label":   { "type": "string", "const": "Thermal Ghosting" },
+            "description": { "type": "string", "const": "Heat Displacement — LWIR signatures without visible-spectrum correlation, or residual thermal imprints." },
+            "lutPreset": {
+              "type": "string",
+              "enum": ["THERMAL_OVERLAY"],
+              "default": "THERMAL_OVERLAY"
+            },
+            "thermalGhostRatio": {
+              "type": "number",
+              "description": "LWIR/VIS mean ratio above which THERMAL_GHOST fires. Higher = less sensitive.",
+              "minimum": 1.5,
+              "maximum": 10.0,
+              "default": 3.0
+            },
+            "stationaryHeatAlert": {
+              "type": "boolean",
+              "description": "Flag STATIONARY_HEAT events — elevated LWIR with zero motion vector (residual imprint).",
+              "default": true
+            },
+            "decayFrames": {
+              "type": "integer",
+              "description": "Number of frames a thermal ghost imprint is held visible after the trigger clears.",
+              "minimum": 1,
+              "maximum": 300,
+              "default": 30
+            },
+            "colorMap": {
+              "type": "string",
+              "description": "False-colour palette for the LWIR channel.",
+              "enum": ["iron", "rainbow", "greyscale", "inferno"],
+              "default": "iron"
+            },
+            "highlightColor": {
+              "type": "string",
+              "description": "CSS hex color for thermal ghost bounding box overlays.",
+              "default": "#ff6b00"
+            }
+          }
+        }
+
+      }
+    },
+
+    "spectralComposition": {
+      "type": "object",
+      "description": "Default spectral band mapping into RGB composite. Overridden per-mode when a mode is active.",
+      "properties": {
+        "rSource": { "type": "string", "enum": ["UV","VIS","NIR","SWIR","MWIR","LWIR"], "default": "NIR" },
+        "gSource": { "type": "string", "enum": ["UV","VIS","NIR","SWIR","MWIR","LWIR"], "default": "SWIR" },
+        "bSource": { "type": "string", "enum": ["UV","VIS","NIR","SWIR","MWIR","LWIR"], "default": "UV" },
+        "rGain":   { "type": "number", "minimum": 0.1, "maximum": 10.0, "default": 1.0 },
+        "gGain":   { "type": "number", "minimum": 0.1, "maximum": 10.0, "default": 1.0 },
+        "bGain":   { "type": "number", "minimum": 0.1, "maximum": 10.0, "default": 1.2 },
+        "gamma":   { "type": "number", "minimum": 0.5, "maximum": 4.0, "default": 2.2 }
+      }
+    },
+
+    "anomalyDetection": {
+      "type": "object",
+      "description": "Global anomaly detection sensitivity controls.",
+      "properties": {
+        "enabled":                { "type": "boolean", "default": true },
+        "sigmaSpikeThreshold":    { "type": "number", "minimum": 1.0, "maximum": 10.0, "default": 4.0 },
+        "phaseInversionThreshold":{ "type": "number", "minimum": -1.0, "maximum": 0.0, "default": -0.3 },
+        "minConfidence":          { "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.4 },
+        "blockSize":              { "type": "integer", "minimum": 4, "maximum": 64, "default": 16 },
+        "maxEventsPerFrame":      { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 },
+        "overlayEnabled":         { "type": "boolean", "default": true,
+          "description": "Render bounding box overlays on the live feed for each detected anomaly." }
+      }
+    },
+
+    "stream": {
+      "type": "object",
+      "description": "Live vision-sync stream configuration for glasses feed → Synology NAS.",
+      "required": ["enabled", "targetUrl"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable real-time streaming to the vision-sync service."
+        },
+        "targetUrl": {
+          "type": "string",
+          "description": "WebSocket URL of the vision-sync service. e.g. ws://synology-nas:5055/stream",
+          "default": "ws://localhost:5055/stream"
+        },
+        "frameRateFps": {
+          "type": "integer",
+          "description": "Target stream frame rate. Lower = less bandwidth.",
+          "minimum": 1,
+          "maximum": 60,
+          "default": 15
+        },
+        "compressionQuality": {
+          "type": "number",
+          "description": "JPEG/WebP compression quality 0–1. 1.0 = lossless.",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "default": 0.75
+        },
+        "bands": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["UV","VIS","NIR","SWIR","MWIR","LWIR"] },
+          "default": ["VIS", "NIR", "LWIR"],
+          "description": "Which raw bands to include in the streamed payload alongside the composite."
+        },
+        "agentAnalysisEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Send each frame to the Ollama agent for real-time AI analysis on the Synology."
+        },
+        "agentModelId": {
+          "type": "string",
+          "description": "Ollama model ID to use for agent analysis.",
+          "default": "llava"
+        }
+      }
+    },
+
+    "meta": {
+      "type": "object",
+      "required": ["taxonomyDomain", "lastUpdated"],
+      "properties": {
+        "taxonomyDomain":  { "type": "string", "const": "DISCERNMENT-AND-VISION" },
+        "taxonomySlug":    { "type": "string", "const": "discernment-and-vision" },
+        "pillar":          { "type": "string", "const": "High-Spectral Veil" },
+        "pillarIndex":     { "type": "integer", "const": 10 },
+        "visionSyncUrl":   { "type": "string", "default": "ws://localhost:5055/stream" },
+        "lastUpdated":     { "type": "string", "format": "date-time" },
+        "sessionId":       { "type": "string" }
+      }
+    }
+
+  }
+}

@@ -220,6 +220,118 @@ services:
     networks:
       - mainframe
 
+  # ── Vision-Sync — Glasses Feed → Synology Agent Analysis ────────────────────
+  # Receives a real-time spectral video stream from smart glasses or a camera,
+  # runs the High-Spectral Veil anomaly pipeline, then forwards composite frames
+  # and anomaly events to the Ollama agent for AI analysis.
+  #
+  # Endpoints:
+  #   ws://localhost:5055/stream   → WebSocket ingest (glasses feed)
+  #   http://localhost:5055/health → Service health
+  #   http://localhost:5055/events → SSE stream of anomaly events to UI
+  #
+  # Environment variables:
+  #   OLLAMA_URL      → Points to the 'agents' service for AI analysis
+  #   AGENT_MODEL_ID  → Ollama model to use (default: llava for vision tasks)
+  #   FRAME_RATE_FPS  → Target ingest frame rate (default: 15)
+  vision-sync:
+    image: node:20-alpine
+    container_name: mainframe_vision_sync
+    restart: unless-stopped
+    working_dir: /app/vision-sync
+    volumes:
+      - ./toolbox/tools/vision-veil:/app/vision-sync/tools
+      - vision_frames:/app/vision-sync/frames
+    command: >
+      sh -c "
+        npm init -y &&
+        npm install ws express &&
+        node -e \"
+          const { WebSocketServer } = require('ws');
+          const express  = require('express');
+          const http     = require('http');
+          const crypto   = require('crypto');
+          const fs       = require('fs');
+
+          const OLLAMA_URL     = process.env.OLLAMA_URL     || 'http://agents:11434';
+          const AGENT_MODEL    = process.env.AGENT_MODEL_ID || 'llava';
+          const FRAME_RATE_FPS = parseInt(process.env.FRAME_RATE_FPS || '15', 10);
+
+          const app    = express();
+          const server = http.createServer(app);
+          const wss    = new WebSocketServer({ server, path: '/stream' });
+
+          /* SSE clients waiting for anomaly events */
+          const sseClients = new Set();
+
+          app.use(express.json());
+          app.get('/health', (_, res) => res.json({ status: 'ok', service: 'vision-sync', model: AGENT_MODEL }));
+
+          /* SSE anomaly event stream */
+          app.get('/events', (req, res) => {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            sseClients.add(res);
+            req.on('close', () => sseClients.delete(res));
+          });
+
+          function broadcast(event) {
+            const msg = 'data: ' + JSON.stringify(event) + '\n\n';
+            sseClients.forEach(res => res.write(msg));
+          }
+
+          /* WebSocket frame ingest */
+          wss.on('connection', (ws, req) => {
+            const sessionId = crypto.randomUUID();
+            console.log('[vision-sync] Agent connected:', sessionId, req.socket.remoteAddress);
+            let frameCount = 0;
+
+            ws.on('message', async (raw) => {
+              frameCount++;
+              const frameId = sessionId + ':' + frameCount;
+
+              /* Persist raw frame for debugging / replay */
+              const framePath = '/app/vision-sync/frames/' + frameId.replace(':', '_') + '.bin';
+              fs.mkdirSync('/app/vision-sync/frames', { recursive: true });
+              fs.writeFileSync(framePath, raw);
+
+              /* Forward to Ollama agent for AI analysis */
+              try {
+                const payload = { model: AGENT_MODEL, prompt: 'Analyze this spectral frame for anomalies, movement patterns, and any non-physical phenomena. Respond with a JSON object: { anomalies: [], summary: string }', images: [raw.toString('base64')], stream: false };
+                const resp = await fetch(OLLAMA_URL + '/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(10000) });
+
+                if (resp.ok) {
+                  const result = await resp.json();
+                  const event  = { frameId, sessionId, frameCount, timestampMs: Date.now(), agentResponse: result.response, framePath };
+                  broadcast(event);
+                  if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'ack', frameId, agentSummary: result.response?.slice(0, 120) }));
+                }
+              } catch (err) {
+                console.warn('[vision-sync] Agent analysis failed for frame', frameId, err.message);
+                if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'ack', frameId, agentSummary: null, error: err.message }));
+              }
+            });
+
+            ws.on('close', () => console.log('[vision-sync] Agent disconnected:', sessionId, 'frames:', frameCount));
+            ws.on('error', (err) => console.error('[vision-sync] WebSocket error:', err.message));
+          });
+
+          server.listen(5055, () => console.log('[vision-sync] Running on :5055 | Ollama:', OLLAMA_URL, '| Model:', AGENT_MODEL));
+        \"
+      "
+    environment:
+      NODE_ENV:       production
+      OLLAMA_URL:     http://agents:11434
+      AGENT_MODEL_ID: llava
+      FRAME_RATE_FPS: "15"
+    ports:
+      - "5055:5055"
+    depends_on:
+      - agents
+    networks:
+      - mainframe
+
 # ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
   db_data:
@@ -227,6 +339,8 @@ volumes:
   ollama_data:
     driver: local
   simulation_results:
+    driver: local
+  vision_frames:
     driver: local
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
