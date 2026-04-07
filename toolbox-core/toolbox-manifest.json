@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,6 +72,46 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "multi-magnitude-processor",
+      "name": "Scalar Data Correlation — Multi-Magnitude Processor",
+      "path": "../toolbox/tools/scalar-core/multi-magnitude-processor.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Scalar Data Correlation",
+      "pillarIndex": 17,
+      "exports": [
+        "synchronizeScales",
+        "formatResonanceTable",
+        "classifySyncQuality"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "COMPUTATIONAL-OPTIMIZATION",
+      "algorithms": ["LTTB downsampling", "z-score normalization", "Pearson cross-correlation", "lag sweep", "prominence-filtered resonance detection"],
+      "inputTypes": ["ScalarSample[]", "ScalarSample[]"],
+      "outputTypes": ["SyncResult"],
+      "description": "Synchronizes two datasets at vastly different temporal or magnitude scales (e.g., nanosecond signals vs. monthly macro-trends). Pipeline: (1) sort + LTTB resample fine series to coarse cadence (shape-preserving); (2) z-score normalize both independently to collapse magnitude differences; (3) cross-correlation lag sweep [-maxLag, +maxLag] to find the optimal time offset between series; (4) align both series at optimal lag; (5) detect harmonic resonance points where fine-scale pattern predicts coarse-scale inflection via prominence threshold + windowed Pearson R + gradient filter. Returns optimalLag, peakR, and resonancePoints sorted by composite score (|R| × |gradient|). Each ResonancePoint is labelled PEAK or VALLEY based on coarse-series gradient polarity."
+    },
+    {
+      "id": "equilibrium-solver",
+      "name": "Scalar Data Correlation — Equilibrium Solver",
+      "path": "../toolbox/tools/scalar-core/equilibrium-solver.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Scalar Data Correlation",
+      "pillarIndex": 17,
+      "exports": [
+        "solveEquilibrium",
+        "formatEquilibriumTable",
+        "isNashEquilibrium"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "COMPUTATIONAL-OPTIMIZATION",
+      "algorithms": ["Iterative Best-Response (IBR)", "marginal-payoff weighted allocation", "constraint clipping + redistribution", "Jain fairness index", "Gini index", "Shannon entropy"],
+      "payoffFunctions": ["logarithmic", "sqrt", "linear", "concave"],
+      "stabilityLabels": ["STABLE", "QUASI-STABLE", "UNSTABLE"],
+      "description": "Game-theory Nash Equilibrium solver for distributing Resource X across competing Node Y agents using Iterative Best-Response (IBR). Each node declares minAlloc, maxAlloc, weight, and a payoff function (logarithmic/sqrt/linear/concave). Each IBR round computes marginal-payoff-weighted best-response allocations, clips to node constraints, redistributes residuals, then blends with stepSize learning rate. Converges when max inter-round delta < tolerance. Returns per-node allocations with payoff, fraction, and constraint status; plus Jain fairness index, Gini inequality index, Shannon entropy, and stability classification. isNashEquilibrium() verifies no node can improve payoff by deviating by epsilon."
     },
     {
       "id": "key-manager",
