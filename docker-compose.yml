@@ -161,6 +161,43 @@ services:
     networks:
       - mainframe
 
+  # ── Tileserver — Offline Map Layer (OpenMapTiles / MapLibre) ─────────────────
+  # Self-hosted vector + raster tile server for the Omni-View dashboard.
+  # Runs entirely offline — no external map API keys needed on the Synology.
+  #
+  # Setup:
+  #   1. Download a region .mbtiles from https://data.maptiler.com/downloads/
+  #      or use openmaptiles/openmaptiles-tools to generate one.
+  #   2. Place the file at: ./tileserver-data/map.mbtiles
+  #   3. Place a MapLibre style JSON at: ./tileserver-data/config.json
+  #      (see: https://tileserver-gl.readthedocs.io for config format)
+  #   4. Run: docker compose up -d tileserver
+  #
+  # Endpoints:
+  #   http://localhost:8080              → TileServer GL GUI
+  #   http://localhost:8080/styles       → Available styles
+  #   http://localhost:8080/data         → Available tile datasets
+  #   http://localhost:8080/health       → Health check
+  #
+  # MapLibre GL JS client connection:
+  #   style: 'http://localhost:8080/styles/bright/style.json'
+  tileserver:
+    image: maptiler/tileserver-gl:latest
+    container_name: mainframe_tileserver
+    restart: unless-stopped
+    volumes:
+      - ./tileserver-data:/data
+    command: ["--config", "/data/config.json", "--port", "8080"]
+    ports:
+      - "8080:8080"
+    networks:
+      - mainframe
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # ── UI — Next.js — Intelligence Dashboard ────────────────────────────────────
   ui:
     image: node:20-alpine

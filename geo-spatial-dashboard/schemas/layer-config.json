@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toolbox-core/geo-spatial-dashboard/schemas/layer-config.json",
+  "title": "Omni-View Geo-Spatial Dashboard — Layer Configuration",
+  "description": "Defines all visual layers, data sources, and 4D scrubbing state for the Omni-View geo-spatial dashboard. Persisted to localStorage under the key 'gab:omnivew:layer-config'.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["scrubber", "layers", "meta"],
+
+  "properties": {
+
+    "scrubber": {
+      "type": "object",
+      "description": "4D time-scrubbing state. Drives which sensor readings are visible at any moment.",
+      "required": ["startTime", "endTime", "currentTime", "playback"],
+      "additionalProperties": false,
+
+      "properties": {
+
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 start of the playback window. The earliest event the scrubber can display.",
+          "examples": ["2025-01-01T00:00:00Z"]
+        },
+
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 end of the playback window. The latest event the scrubber can display.",
+          "examples": ["2025-12-31T23:59:59Z"]
+        },
+
+        "currentTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 currently displayed time. Must be >= startTime and <= endTime.",
+          "examples": ["2025-06-15T12:00:00Z"]
+        },
+
+        "playback": {
+          "type": "object",
+          "description": "Playback engine controls.",
+          "required": ["isPlaying", "speedMultiplier", "stepIntervalMs", "loopEnabled"],
+          "properties": {
+            "isPlaying":       { "type": "boolean", "default": false },
+            "speedMultiplier": {
+              "type": "number",
+              "description": "1x = real-time, 10x = 10 seconds per second, etc.",
+              "minimum": 0.1,
+              "maximum": 10000,
+              "default": 1
+            },
+            "stepIntervalMs": {
+              "type": "integer",
+              "description": "How many milliseconds of real time to advance per animation frame.",
+              "default": 1000,
+              "minimum": 100
+            },
+            "loopEnabled": { "type": "boolean", "default": false },
+            "snapToEvents": {
+              "type": "boolean",
+              "description": "When true, currentTime snaps forward to the next data event instead of advancing linearly.",
+              "default": false
+            }
+          }
+        },
+
+        "granularity": {
+          "type": "string",
+          "description": "Minimum scrubbing resolution. Coarser = faster rendering for large datasets.",
+          "enum": ["100ms", "1s", "10s", "1min", "5min", "15min", "1h", "1d"],
+          "default": "1s"
+        },
+
+        "timezone": {
+          "type": "string",
+          "description": "IANA timezone for display. e.g. 'America/New_York' or 'UTC'.",
+          "default": "UTC"
+        }
+
+      }
+    },
+
+    "layers": {
+      "type": "array",
+      "description": "Ordered list of map layers. Rendered bottom-to-top.",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label", "visible", "source"],
+        "properties": {
+
+          "id": {
+            "type": "string",
+            "description": "Unique layer identifier.",
+            "examples": ["gnss-drone-track", "wifi-occupancy-heatmap", "satellite-imagery"]
+          },
+
+          "type": {
+            "type": "string",
+            "description": "Rendering type.",
+            "enum": [
+              "tile",           "geojson",        "heatmap",
+              "point-cloud",    "track",           "polygon",
+              "raster",         "3d-extrusion",   "sensor-overlay",
+              "occupancy-grid"
+            ]
+          },
+
+          "label": { "type": "string", "description": "Human-readable layer name shown in the legend." },
+
+          "visible": { "type": "boolean", "default": true },
+
+          "opacity": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
+
+          "source": {
+            "type": "object",
+            "description": "Data source configuration.",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["tileserver", "convex-query", "websocket", "static-geojson", "rssi-feed", "gnss-feed"]
+              },
+              "url":         { "type": "string", "description": "Endpoint URL for tile, WS, or GeoJSON sources." },
+              "convexQuery": { "type": "string", "description": "Convex query name (e.g. 'spatial:getOccupancyTrack')." },
+              "refreshMs":   { "type": "integer", "description": "Polling interval for live sources (ms).", "default": 5000 },
+              "attribution": { "type": "string", "description": "Map attribution string for tile sources." }
+            }
+          },
+
+          "temporalFilter": {
+            "type": "object",
+            "description": "Controls how this layer responds to the 4D scrubber.",
+            "properties": {
+              "enabled":         { "type": "boolean", "default": true },
+              "timestampField":  { "type": "string", "description": "Field name in the data that holds the Unix ms timestamp.", "default": "timestampMs" },
+              "windowMs": {
+                "type": "integer",
+                "description": "Size of the visible time window around currentTime (ms). e.g. 60000 = show last 60 s.",
+                "default": 60000
+              },
+              "fadeOutMs": {
+                "type": "integer",
+                "description": "Features older than (windowMs - fadeOutMs) start fading. 0 = hard cutoff.",
+                "default": 10000
+              }
+            }
+          },
+
+          "style": {
+            "type": "object",
+            "description": "MapLibre/MapboxGL-compatible style expression fragment.",
+            "properties": {
+              "color":       { "type": "string", "description": "CSS color or MapLibre expression." },
+              "radius":      { "type": "number", "description": "Point radius in pixels." },
+              "lineWidth":   { "type": "number", "description": "Line width in pixels." },
+              "heatmapIntensity": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.6 },
+              "fillColor":   { "type": "string" },
+              "fillOpacity": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          },
+
+          "sensorFusion": {
+            "type": "object",
+            "description": "Link to a sensor-fusion engine output for this layer.",
+            "properties": {
+              "engine":     { "type": "string", "enum": ["gnss-fusion", "rssi-occupancy"] },
+              "sourceTool": { "type": "string", "const": "sensor-fusion" }
+            }
+          },
+
+          "minZoom": { "type": "number", "minimum": 0, "maximum": 24, "default": 0 },
+          "maxZoom": { "type": "number", "minimum": 0, "maximum": 24, "default": 24 }
+
+        }
+      },
+
+      "default": [
+        {
+          "id": "offline-base-tiles",
+          "type": "tile",
+          "label": "Offline Base Map (OpenMapTiles)",
+          "visible": true,
+          "opacity": 1,
+          "source": {
+            "type": "tileserver",
+            "url": "http://localhost:8080/styles/bright/{z}/{x}/{y}.png",
+            "attribution": "© OpenMapTiles © OpenStreetMap contributors"
+          },
+          "temporalFilter": { "enabled": false }
+        },
+        {
+          "id": "gnss-drone-track",
+          "type": "track",
+          "label": "Drone GNSS Track",
+          "visible": true,
+          "opacity": 0.9,
+          "source": { "type": "gnss-feed", "convexQuery": "spatial:getDroneTrack", "refreshMs": 2000 },
+          "temporalFilter": { "enabled": true, "timestampField": "timestampMs", "windowMs": 120000, "fadeOutMs": 30000 },
+          "style": { "color": "#00f0ff", "lineWidth": 2, "radius": 6 },
+          "sensorFusion": { "engine": "gnss-fusion", "sourceTool": "sensor-fusion" }
+        },
+        {
+          "id": "wifi-occupancy-heatmap",
+          "type": "heatmap",
+          "label": "Wi-Fi Occupancy Heatmap",
+          "visible": true,
+          "opacity": 0.75,
+          "source": { "type": "rssi-feed", "convexQuery": "spatial:getOccupancyTrack", "refreshMs": 5000 },
+          "temporalFilter": { "enabled": true, "timestampField": "timestampMs", "windowMs": 30000, "fadeOutMs": 5000 },
+          "style": { "heatmapIntensity": 0.7, "color": "#ff6b00" },
+          "sensorFusion": { "engine": "rssi-occupancy", "sourceTool": "sensor-fusion" },
+          "minZoom": 14
+        },
+        {
+          "id": "satellite-phone-points",
+          "type": "point-cloud",
+          "label": "Phone / Satellite Fixes",
+          "visible": false,
+          "opacity": 0.6,
+          "source": { "type": "gnss-feed", "convexQuery": "spatial:getPhoneTrack", "refreshMs": 10000 },
+          "temporalFilter": { "enabled": true, "timestampField": "timestampMs", "windowMs": 300000 },
+          "style": { "color": "#7fff00", "radius": 4 }
+        }
+      ]
+    },
+
+    "viewport": {
+      "type": "object",
+      "description": "Current map viewport state.",
+      "properties": {
+        "latitude":  { "type": "number", "default": 0 },
+        "longitude": { "type": "number", "default": 0 },
+        "zoom":      { "type": "number", "minimum": 0, "maximum": 24, "default": 10 },
+        "bearing":   { "type": "number", "minimum": -180, "maximum": 180, "default": 0 },
+        "pitch":     { "type": "number", "minimum": 0, "maximum": 85, "default": 0 }
+      }
+    },
+
+    "meta": {
+      "type": "object",
+      "required": ["taxonomyDomain", "lastUpdated"],
+      "properties": {
+        "taxonomyDomain":   { "type": "string", "const": "COMMAND-AND-CONTROL" },
+        "taxonomySlug":     { "type": "string", "const": "command-and-control" },
+        "pillar":           { "type": "string", "const": "Omni-View" },
+        "pillarIndex":      { "type": "integer", "const": 9 },
+        "tileserverUrl":    { "type": "string", "default": "http://localhost:8080" },
+        "lastUpdated":      { "type": "string", "format": "date-time" },
+        "sessionId":        { "type": "string" }
+      }
+    }
+
+  }
+}
