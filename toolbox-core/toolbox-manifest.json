@@ -1,11 +1,139 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
   "tools": [
+    {
+      "id": "intelligence-version-control",
+      "name": "Meta-Governance — Intelligence Version Control",
+      "path": "../toolbox/tools/meta-governance/intelligence-version-control.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Meta-Agent Overseer",
+      "pillarIndex": 32,
+      "component": "A",
+      "exports": [
+        "IntelligenceVersionControl",
+        "formatSnapshot",
+        "formatRollbackEvent"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["APEX-GOVERNANCE"],
+      "snapshotDomains": ["PROMPT", "ARBITRATION", "OBJECTIVE", "BANDIT", "CONFIG"],
+      "snapshotPolicies": ["AUTO", "MANUAL", "CRON"],
+      "rollbackReasons": ["PERFORMANCE_DROP", "CRITIC_REJECTION_SURGE", "LATENCY_SPIKE", "SIP_DIRECTIVE", "HUMAN_OVERRIDE", "REGRESSION_DETECTED"],
+      "description": "Immutable snapshot and rollback engine for the Mainframe's mutable intelligence state. Covers five domains: PROMPT (PromptArchive records), ARBITRATION (ArbitrationPlan configs), OBJECTIVE (ObjectiveRegistry metric values), BANDIT (BanditStrategyManager arm statistics), CONFIG (any pillar's runtime config blob). Three snapshot policies: AUTO (triggered by successRate drop ≥ autoSnapshotDropThreshold=0.10 via autoCheck()), MANUAL (human or Meta-Agent directive), CRON (triggered by ReflectionCron after each cycle). Every snapshot is immutable once written; versioned monotonically per pillar+domain slot. Pruning: oldest snapshots beyond maxSnapshotsPerSlot (default 50) are evicted. rollback(toVersion) restores the active pointer and emits a RollbackEvent; rollbackToLastStable(minRate) scans snapshot history for the most recent entry with successRate ≥ threshold. diff(versionA, versionB) computes metricsDelta (successRate, confidence, latency, stc) and changedKeys (JSON key diff on state blobs). onRollback callback for audit trail."
+    },
+    {
+      "id": "shadow-test-harness",
+      "name": "Meta-Governance — Shadow Test Harness",
+      "path": "../toolbox/tools/meta-governance/shadow-test-harness.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Meta-Agent Overseer",
+      "pillarIndex": 32,
+      "component": "B",
+      "exports": [
+        "ShadowTestHarness",
+        "formatExperimentSummary"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["APEX-GOVERNANCE"],
+      "captureModes": ["FIRE_AND_FORGET", "AWAIT"],
+      "winnerDecisions": ["A_WINS", "B_WINS", "TIE", "UNDECIDED"],
+      "scoringWeights": { "confidence": 0.60, "latency": 0.25, "cost": 0.15 },
+      "productionImpact": "ZERO — B result never reaches caller in FIRE_AND_FORGET mode",
+      "description": "Runs an experimental B strategy in parallel with production A strategy without affecting output. Three design guarantees: (1) zero production latency impact — B fires asynchronously (FIRE_AND_FORGET mode; AWAIT mode only for test environments); (2) B result never reaches the caller; (3) full outcome comparison stored in ShadowResults. StrategyFn interface: async function returning output + confidence + latencyMs + optional tokens/cost/metadata. Scoring: composite score = 0.60*confidence + 0.25*(1 - latency/maxLat) + 0.15*(1 - cost/maxCost). Winner determination: TIE if |scoreDelta| < winThreshold (default 0.02), otherwise B_WINS or A_WINS. shadowFraction [0,1] controls what fraction of traffic is shadowed (default 1.0). B timeout (bTimeoutMs default 15s) silently drops B errors in FIRE_AND_FORGET mode. concludeExperiment() tallies aWins/bWins/ties and computes avgScoreDelta across all runs. Meta-Agent auto-concludes experiments with ≥ 30 runs and promotes B winner to ACTIVE in PromptArchive."
+    },
+    {
+      "id": "skill-library",
+      "name": "Meta-Governance — Skill Library",
+      "path": "../toolbox/tools/meta-governance/skill-library.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Meta-Agent Overseer",
+      "pillarIndex": 32,
+      "component": "C",
+      "exports": [
+        "SkillLibrary",
+        "formatSkill",
+        "formatSkillLibrarySummary"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["APEX-GOVERNANCE"],
+      "skillStatuses": ["CANDIDATE", "ACTIVE", "DEPRECATED", "ARCHIVED"],
+      "autoPromotionThreshold": 0.80,
+      "autoDeprecationThreshold": 0.60,
+      "minInvocationsBeforeLifecycle": 5,
+      "description": "Indexes successful Chains of Thought (CoT) as reusable, callable Skill functions available to all spawned agents. A Skill is a named, versioned CoT procedure with ordered SkillStep[] (each step: label, instruction, toolIds[], outputSchema, parallel flag) and a full promptTemplate. Skill lifecycle: CANDIDATE → ACTIVE → DEPRECATED | ARCHIVED. Auto-promotion: after minInvocations (default 5), if avgConfidence ≥ promotionThreshold (0.80) → promote to ACTIVE. Auto-deprecation: if ACTIVE and avgConfidence drops below deprecationThreshold (0.60) → deprecate. Versioning: registering a new skill with an existing name auto-deprecates the previous ACTIVE version and increments version number. findByTags(tags, requireAll?) returns ACTIVE skills matching any or all tags, sorted by avgConfidence. invoke(name, input, executorFn) calls the executor with the full Skill record, records invocation outcome, and triggers lifecycle checks. All agents can call SkillLibrary.findByTags(['taxonomy','scoring']) to discover available CoT procedures rather than re-deriving them from scratch."
+    },
+    {
+      "id": "cto-dashboard",
+      "name": "Meta-Governance — CTO Dashboard",
+      "path": "../toolbox/tools/meta-governance/cto-dashboard.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Meta-Agent Overseer",
+      "pillarIndex": 32,
+      "component": "D",
+      "exports": [
+        "CtoDashboard",
+        "formatSystemHealthReport"
+      ],
+      "dependencies": ["objective-registry", "reflection-cron", "skill-library", "shadow-test-harness"],
+      "taxonomyDomains": ["APEX-GOVERNANCE"],
+      "healthDimensions": ["LATENCY", "COST", "CONFIDENCE", "GOAL_ALIGNMENT"],
+      "healthBands": ["HEALTHY (≥0.85)", "WARNING (≥0.70)", "DEGRADED (≥0.50)", "CRITICAL (<0.50)"],
+      "healthScoringWeights": { "successRate": 0.35, "confidence": 0.30, "latency": 0.20, "cost": 0.15 },
+      "description": "Aggregates Latency, Cost, Confidence, and Goal-Alignment from all Mainframe pillars into a single structured SystemHealthReport. Input: PillarTelemetryInput[] — each pillar pushes invocations, successRate, latencySamples[], latencyBudget, token counts, estimatedCostUsd, avgConfidence, rejectionRate, confidenceTrend, activeSips, activeSkills, shadowExperiments, rollbackCount. Latency: computes p50/p95/p99 per pillar and system-wide from raw samples. Pillar health scoring: weighted composite = 0.35*successRate + 0.30*avgConfidence + 0.20*latencyScore(p95 vs 1.5×budget) + 0.15*costScore. System health score = mean of all pillar scores. Health bands: HEALTHY ≥ 0.85 / WARNING ≥ 0.70 / DEGRADED ≥ 0.50 / CRITICAL < 0.50. Issue detection: auto-generates SystemIssue[] for successRate < 0.70, budget breaches > 20%, avgConfidence < 0.65, DEGRADING confidence trend, goal progress < 50%. Recommendations: actionable strings mapping each issue to the responsible Pillar. Goal alignment from ObjectiveRegistry: onTrackCount, offTrackCount, avgProgressPct, achievedCount. formatSystemHealthReport() renders a full CTO-readable ASCII dashboard."
+    },
+    {
+      "id": "meta-agent",
+      "name": "Meta-Governance — Meta-Agent Persona",
+      "path": "../toolbox/tools/meta-governance/meta-agent.md",
+      "version": "1.0.0",
+      "type": "agent-persona",
+      "pillar": "Meta-Agent Overseer",
+      "pillarIndex": 32,
+      "component": "PERSONA",
+      "exports": [],
+      "dependencies": [
+        "intelligence-version-control",
+        "shadow-test-harness",
+        "skill-library",
+        "cto-dashboard",
+        "reflection-cron",
+        "objective-registry",
+        "bandit-strategy-manager",
+        "mutation-engine",
+        "tool-registry-weighted",
+        "failure-recorder",
+        "pre-flight-check",
+        "prompt-archive"
+      ],
+      "taxonomyDomains": ["APEX-GOVERNANCE"],
+      "authority": [
+        "SIP auto-apply (PROPOSED → APPLIED)",
+        "IVC rollback directives",
+        "Bandit epsilon/exploreFraction adjustments",
+        "Shadow experiment conclusion + B-winner promotion",
+        "Skill promotion / deprecation",
+        "Human escalation for CRITICAL conditions"
+      ],
+      "escalationThresholds": [
+        "systemHealthBand === CRITICAL",
+        "SIP category === FAILURE_PATTERN_ALERT",
+        "SIP category === OBJECTIVE_REVIEW",
+        "Rollback span > 3 versions",
+        "Shadow avgScoreDelta > 0.15"
+      ],
+      "decisionProtocol": ["TRIAGE", "SIP_QUEUE", "ROLLBACK", "REBALANCE", "EXPERIMENTS", "GOALS", "REPORT"],
+      "resourceAllocationFormula": "budgetShare = healthScore^2 / sum(all healthScores^2) — quadratic weighting concentrates resources on high-performing pillars",
+      "description": "AI CTO persona definition for the Meta-Agent. Defines the complete 7-step decision protocol: (1) TRIAGE — read CTO Dashboard, identify CRITICAL/DEGRADED pillars, address top-3 issues; (2) SIP QUEUE — auto-apply PROMPT_MUTATION/LATENCY_OPTIMIZATION/BANDIT_REBALANCE/TOOL_DEMOTION SIPs, escalate FAILURE_PATTERN_ALERT/OBJECTIVE_REVIEW; (3) ROLLBACK — issue IVC rollback for pillars with successRate < 0.60 to last stable snapshot ≥ 0.75; (4) REBALANCE — adjust Bandit epsilon ±0.05 based on HEALTHY/DEGRADING status; (5) EXPERIMENTS — conclude Shadow experiments with ≥ 30 runs, promote B-winners with avgScoreDelta > 0.03; (6) GOALS — escalate CRITICAL-weight objectives with < 40% progress; (7) REPORT — emit structured GOVERNANCE_ACTION_LOG. Resource allocation: quadratic health-score weighting concentrates token budget on high-performing pillars. Pillar dependency map shows full causal chain from Objective Registry through Reflection Cron to all downstream pillars. Five hard escalation thresholds that always require human approval."
+    },
     {
       "id": "recursive-decomposer",
       "name": "Intelligence Core — Recursive Decomposer",
