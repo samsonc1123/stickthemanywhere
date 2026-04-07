@@ -1,11 +1,91 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
   "tools": [
+    {
+      "id": "recursive-decomposer",
+      "name": "Intelligence Core — Recursive Decomposer",
+      "path": "../toolbox/tools/intelligence-core/recursive-decomposer.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Recursive Decomposition",
+      "pillarIndex": 26,
+      "exports": [
+        "RecursiveDecomposer",
+        "createRuleDecomposer",
+        "createLlmDecomposer",
+        "formatTaskTree"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["AUTONOMOUS-SOVEREIGNTY"],
+      "decompositionModes": ["RULE_BASED", "LLM_BASED"],
+      "depthLimiting": "maxDepth cap (default 5) — hard stop prevents infinite recursion",
+      "costTracking": "every node carries estimatedCost; sub-trees exceeding costBudget are DEFERRED",
+      "description": "Breaks a high-level Objective into a depth-bounded task-tree where every node is a concrete, executable unit of work. Recursive expansion calls a pluggable DecomposeFn (rule or LLM backend). Depth limiting: maxDepth cap (default 5). Cost tracking: costPerDepth map gives each depth tier a base cost; cumulativeCost rolls up through the tree; nodes whose running cost would exceed costBudget are auto-pruned and marked DEFERRED. Capability tagging: every leaf is annotated with capability tags the Arbitration Engine (Pillar 24) needs for tool selection. Two built-in DecomposeFn implementations: createRuleDecomposer() — pure keyword-based splitting on conjunctions/numbered steps + regex capability-tag inference; createLlmDecomposer() — calls GPT-4o-mini for structured JSON sub-task breakdown with graceful rule-based fallback. RecursiveDecomposer.getExecutionQueue() returns leaf nodes in BFS order as the agent execution queue. updateNodeStatus() propagates COMPLETE/FAILED/BLOCKED. formatTaskTree() renders the full tree with cost, tags, and status glyphs."
+    },
+    {
+      "id": "reflection-cron",
+      "name": "Intelligence Core — Reflection Cron",
+      "path": "../toolbox/tools/intelligence-core/reflection-cron.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Reflection Cron",
+      "pillarIndex": 27,
+      "exports": [
+        "ReflectionCron",
+        "formatSip",
+        "formatReflectionReport"
+      ],
+      "dependencies": ["telemetry-logger", "failure-recorder"],
+      "taxonomyDomains": ["AUTONOMOUS-SOVEREIGNTY"],
+      "schedule": "configurable interval, default 6 hours",
+      "sipCategories": ["PROMPT_MUTATION", "TOOL_DEMOTION", "ARBITRATION_REVIEW", "FAILURE_PATTERN_ALERT", "LATENCY_OPTIMIZATION", "OBJECTIVE_REVIEW", "BANDIT_REBALANCE", "GENERAL"],
+      "sipPriorities": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+      "sipStatuses": ["PROPOSED", "ACCEPTED", "APPLIED", "REJECTED"],
+      "description": "Runs on a configurable schedule (default every 6 hours). Each cycle audits Telemetry and Failure logs across all registered pillars and generates System Improvement Proposals (SIPs). SIP lifecycle: PROPOSED → ACCEPTED → APPLIED | REJECTED. Seven SIP generators per cycle: (1) successRate < mutationThreshold (default 0.75) → PROMPT_MUTATION SIP targeting Pillar 23; (2) DEGRADING trend across consecutive windows → ARBITRATION_REVIEW SIP targeting Pillar 24; (3) criticalCount > 0 in FailureRecorder → FAILURE_PATTERN_ALERT SIP (CRITICAL priority); (4) highLatencyPaths > 0 → LATENCY_OPTIMIZATION SIP; (5) successRate ≥ 0.92 + total ≥ 10 → BANDIT_REBALANCE SIP targeting Pillar 28 (increase exploration); deduplicated by category+targetPillar, highest priority wins. Health summary per pillar: score + IMPROVING/STABLE/DEGRADING trend. start()/stop() for lifecycle management; reflect() for manual trigger. onReport callback receives full ReflectionReport after each cycle."
+    },
+    {
+      "id": "bandit-strategy-manager",
+      "name": "Intelligence Core — Bandit Strategy Manager",
+      "path": "../toolbox/tools/intelligence-core/bandit-strategy-manager.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Bandit Strategy Manager",
+      "pillarIndex": 28,
+      "exports": [
+        "BanditStrategyManager",
+        "formatBanditReport"
+      ],
+      "dependencies": ["prompt-archive"],
+      "taxonomyDomains": ["AUTONOMOUS-SOVEREIGNTY"],
+      "defaultAllocation": "20% explore (CANDIDATE prompts) / 80% exploit (ACTIVE prompts)",
+      "strategies": ["EPSILON_GREEDY", "UCB1", "THOMPSON", "FIXED_SPLIT"],
+      "description": "Multi-armed bandit allocation layer that routes agent calls to either ACTIVE (exploit) or CANDIDATE mutation (explore) prompt arms. Default allocation: 20% explore / 80% exploit. Four strategies: EPSILON_GREEDY — explore with probability ε (default 0.20), exploit best arm otherwise; UCB1 — Upper Confidence Bound with configurable c constant (default √2), rewards under-tested arms; THOMPSON — Beta-distribution Thompson Sampling with Johnk's Gamma method, samples posterior belief over each arm; FIXED_SPLIT — static configurable ratio. Arms are sourced from PromptArchive (Pillar 23): ACTIVE prompts = exploit arms, CANDIDATE prompts = explore arms. syncArms(pillarId) hydrates from archive. select(pillarId) returns BanditDecision with promptId, isExplore flag, strategy used. recordReward(pillarId, promptId, success, confidence) updates arm stats: pulls, successes, failures, avgReward, alphaParam/betaParam for Thompson, UCB score. getReport() returns per-pillar stats including exploreRatio, bestArmId, bestArmReward, and ranked arm list. The Reflection Cron (Pillar 27) may issue BANDIT_REBALANCE SIPs to adjust epsilon or exploreFraction."
+    },
+    {
+      "id": "objective-registry",
+      "name": "Intelligence Core — Objective Registry",
+      "path": "../toolbox/tools/intelligence-core/objective-registry.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Objective Registry",
+      "pillarIndex": 29,
+      "exports": [
+        "ObjectiveRegistry",
+        "seedSovereignObjectives",
+        "formatObjective",
+        "formatObjectiveDashboard"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["AUTONOMOUS-SOVEREIGNTY"],
+      "categories": ["ACCURACY", "REVENUE", "VELOCITY", "QUALITY", "RESILIENCE", "GROWTH", "SOVEREIGNTY"],
+      "bootstrapObjectives": ["System Accuracy (ACCURACY, w=0.90)", "Revenue Generation (REVENUE, w=0.80)", "Execution Velocity (VELOCITY, w=0.70)"],
+      "description": "Stores Persistent Goals (Objectives) injected as the primary system prompt context into every spawned agent. Each Objective has: title, natural-language statement, ObjectiveCategory (ACCURACY/REVENUE/VELOCITY/QUALITY/RESILIENCE/GROWTH/SOVEREIGNTY), priority weight [0,1], owner pillar, linked pillars, and an ObjectiveMetric (name, currentValue, targetValue, unit, direction=HIGHER_IS_BETTER|LOWER_IS_BETTER). Auto-generates promptFragment — imperative instruction string with current/target/gap — rebuilt whenever updateMetric() is called. Auto-achieves status when currentValue reaches targetValue. buildSystemPromptBlock(pillarFilter?, maxObjectives?) assembles the SOVEREIGN OBJECTIVES block with ASCII progress bars and priority labels ([CRITICAL PRIORITY]/[HIGH PRIORITY]/[STANDARD]). injectIntoPrompt(systemPrompt) prepends the block to any agent system prompt. Three canonical bootstrap objectives via seedSovereignObjectives(): System Accuracy (avg_critic_confidence 0.70→0.90, ACCURACY, w=0.90), Revenue Generation (conversion_rate 2%→5%, REVENUE, w=0.80), Execution Velocity (avg_task_latency 3200ms→5000ms, VELOCITY, w=0.70). Progress tracking: getProgress() returns progressPct, gap, onTrack flag."
+    },
     {
       "id": "failure-recorder",
       "name": "Wisdom Vault — Failure Recorder",
