@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,6 +72,50 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "context-relay",
+      "name": "Context Orchestration Layer — Context Relay",
+      "path": "../toolbox/tools/orchestration/context-relay.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Context Orchestration Layer",
+      "pillarIndex": 16,
+      "exports": [
+        "TableWatcher",
+        "MemoryScraper",
+        "createWatcherFromEnv",
+        "createScraperFromEnv"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "NEURAL-INFRASTRUCTURE",
+      "envVars": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "MEMORY_BASE_DIR"],
+      "protocol": "Supabase Realtime WebSocket (phoenix channel format, vsn 1.0.0)",
+      "description": "Two-system context relay: TableWatcher subscribes to Supabase/Postgres table-change events (INSERT/UPDATE/DELETE) via Realtime WebSocket with exponential-backoff reconnection, heartbeat keepalive (25 s), per-subscription event filtering, and a 5 000-entry in-memory event log. MemoryScraper indexes .md files from the filesystem (Bun.Glob + Node fs fallback), extracts h1 titles, h2/h3 keywords, bold terms, YAML front-matter pillar tags, and scores every document against a WatcherEvent's tag set using weighted TF scoring (keyword 2×, body 1×, pillar-tag 1.5×) — returning the top-N most relevant MemoryDocument excerpts."
+    },
+    {
+      "id": "just-in-time-buffer",
+      "name": "Context Orchestration Layer — Just-In-Time Context Buffer",
+      "path": "../toolbox/tools/orchestration/just-in-time.buffer.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Context Orchestration Layer",
+      "pillarIndex": 16,
+      "exports": [
+        "ContextBuffer",
+        "ContextInjector",
+        "ContextOrchestrator",
+        "InProcessUserLogSink",
+        "createSupabaseDbProvider",
+        "createOrchestratorFromEnv",
+        "buildAgentCall",
+        "packetToPrompt"
+      ],
+      "dependencies": ["context-relay"],
+      "taxonomyDomain": "NEURAL-INFRASTRUCTURE",
+      "envVars": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+      "linkedPillars": [13, 15],
+      "description": "Just-In-Time Context Buffer: assembles ContextPackets from three concurrent sources (DB state snapshot via Supabase REST, user activity logs, top-3 memory excerpts from MemoryScraper), stitches a unified keyword index, generates a terse natural-language summary, and times each gather phase. ContextInjector is a pure transform that attaches the packet to any AgentCall's metadata.context key without mutating the original. ContextOrchestrator wires buffer + injector into a single process() call. InProcessUserLogSink is an in-memory log store for dev. packetToPrompt() renders the full packet as an LLM-ready markdown prompt."
     },
     {
       "id": "tool-packager",
@@ -1175,6 +1219,97 @@
               { "id": "tx-007", "name": "Zinc supplementation",             "class": "ADJUNCT",         "isPreferred": false },
               { "id": "tx-008", "name": "Topical corticosteroids",          "class": "CONTRAINDICATED", "isPreferred": false }
             ]
+          }
+        ]
+      },
+      {
+        "name": "Neural Infrastructure",
+        "code": "NEURAL-INFRASTRUCTURE",
+        "slug": "neural-infrastructure",
+        "type": "domain",
+        "parentSlug": null,
+        "dangerLevel": "caution",
+        "pillar": "Context Orchestration Layer",
+        "pillarIndex": 16,
+        "linkedTools": ["context-relay", "just-in-time-buffer"],
+        "linkedDomains": ["UNIVERSAL-GOVERNANCE", "MARKETPLACE-INFRASTRUCTURE", "KINGDOM-FINANCE"],
+        "description": "Sixteenth pillar of the Sovereign Mainframe. Neural Infrastructure is the living connective tissue of the Mainframe — it observes every DB change, retrieves the most relevant memory, aggregates user state, and delivers a fully-formed ContextPacket to every outgoing agent call before it leaves the system. No agent call goes out cold.",
+        "nodes": [
+          {
+            "name": "Context Orchestration",
+            "code": "CONTEXT-ORCHESTRATION",
+            "slug": "context-orchestration",
+            "type": "category",
+            "dangerLevel": "caution",
+            "sortOrder": 1,
+            "pillarIndex": 16,
+            "linkedTools": ["context-relay", "just-in-time-buffer"]
+          },
+          {
+            "name": "Table Watchers",
+            "code": "TABLE-WATCHERS",
+            "slug": "table-watchers",
+            "type": "subcategory",
+            "parentSlug": "context-orchestration",
+            "dangerLevel": "caution",
+            "sortOrder": 1,
+            "linkedTools": ["context-relay"],
+            "protocol": "Supabase Realtime — phoenix channel format, vsn 1.0.0",
+            "description": "TableWatcher opens a WebSocket to Supabase Realtime and joins phoenix channels for each registered table subscription. Supports per-subscription event filtering (INSERT/UPDATE/DELETE), Postgres row filter expressions (e.g. status=eq.active), multi-handler fan-out, heartbeat keepalive at 25 s, exponential-backoff reconnection (max 10 attempts, doubling from 1 s), and a 5 000-entry in-memory event log. WatcherEvent includes extracted tags from all string columns for downstream memory scoring."
+          },
+          {
+            "name": "Memory Scraper",
+            "code": "MEMORY-SCRAPER",
+            "slug": "memory-scraper",
+            "type": "subcategory",
+            "parentSlug": "context-orchestration",
+            "dangerLevel": "safe",
+            "sortOrder": 2,
+            "linkedTools": ["context-relay"],
+            "scoringWeights": {
+              "keywordHit": 2.0,
+              "bodyTokenHit": 1.0,
+              "pillarTagHit": 1.5
+            },
+            "description": "MemoryScraper maintains an in-memory index of .md files. Ingestion: scanFilesystem() uses Bun.Glob (primary) or Node fs.readdir (fallback), caps at 512 KB per file. Extraction: h1 → title, h2/h3 headings + bold terms → keywords, YAML front-matter pillars: → pillarTags. Scoring: weighted TF over body tokens, keyword list, and pillar tags. Returns top-N MemoryMatch objects ranked by score, ties broken by indexedAt recency. Two ingestion modes: filesystem scan and programmatic ingestDocument() for Vercel/edge environments."
+          },
+          {
+            "name": "JIT Context Buffer",
+            "code": "JIT-CONTEXT-BUFFER",
+            "slug": "jit-context-buffer",
+            "type": "subcategory",
+            "parentSlug": "context-orchestration",
+            "dangerLevel": "caution",
+            "sortOrder": 3,
+            "linkedTools": ["just-in-time-buffer"],
+            "contextPacketFields": [
+              "packetId", "assembledAt", "pillarIndex", "sessionId",
+              "dbState", "userLogs", "memory", "keywordIndex", "summary", "timings"
+            ],
+            "description": "ContextBuffer.assemble() fires three concurrent async calls: dbProvider (Supabase REST snapshot of watched tables), logProvider (recent UserLogEntry[] for session), memProvider (top-3 MemoryMatches). Results are stitched into an immutable ContextPacket with a unified keyword index and a terse natural-language summary. Rolling history of last 100 packets retained in memory for debug and replay."
+          },
+          {
+            "name": "Context Injector",
+            "code": "CONTEXT-INJECTOR",
+            "slug": "context-injector",
+            "type": "subcategory",
+            "parentSlug": "context-orchestration",
+            "dangerLevel": "safe",
+            "sortOrder": 4,
+            "linkedTools": ["just-in-time-buffer"],
+            "description": "ContextInjector is a pure, non-mutating transform. inject(call, packet) returns a new InjectedAgentCall with metadata.context populated. injectBatch() processes N calls against the same packet in one pass. Configurable: metadataKey (default 'context'), omitDbData (for token-constrained models), includeFullMemory (excerpts vs. full content). extract() recovers the packet from any injected call."
+          },
+          {
+            "name": "Context Orchestrator",
+            "code": "CONTEXT-ORCHESTRATOR",
+            "slug": "context-orchestrator",
+            "type": "subcategory",
+            "parentSlug": "context-orchestration",
+            "dangerLevel": "caution",
+            "sortOrder": 5,
+            "linkedTools": ["just-in-time-buffer"],
+            "linkedPillars": [13, 15],
+            "description": "ContextOrchestrator.process(calls[], sessionId, opts) is the single integration point: assembles the packet and injects it into all provided agent calls in one await. assembleOnly() pre-warms the packet without injection. createOrchestratorFromEnv() wires everything from SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY with zero boilerplate. packetToPrompt() renders the full packet as LLM-ready markdown for direct system-prompt injection."
           }
         ]
       },
