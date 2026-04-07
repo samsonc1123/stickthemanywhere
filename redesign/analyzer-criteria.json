@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Redesign Analyzer Criteria",
+  "description": "Evaluation schema for the Analyzer Agent. Each field is scored during the Input Layer ingestion phase. Businesses with visualScore < 4 are flagged as primary redesign targets.",
+  "type": "object",
+  "required": [
+    "businessName",
+    "url",
+    "visualScore",
+    "hasMobileResponsiveness",
+    "ctaCount",
+    "loadTimeSpeed",
+    "trustSignals"
+  ],
+  "properties": {
+    "businessName": {
+      "type": "string",
+      "description": "Legal or trade name of the business."
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Root URL of the website being evaluated."
+    },
+    "visualScore": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Subjective or AI-assigned visual design quality score. Scores below 4 trigger redesign targeting."
+    },
+    "hasMobileResponsiveness": {
+      "type": "boolean",
+      "description": "True if the site passes a mobile-responsiveness check (viewport meta, fluid layout, no horizontal overflow)."
+    },
+    "ctaCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of distinct call-to-action elements detected on the homepage."
+    },
+    "loadTimeSpeed": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Time-to-first-byte or fully-loaded time in milliseconds."
+    },
+    "trustSignals": {
+      "type": "array",
+      "description": "Trust indicators found on the site.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "reviews",
+          "social-proof",
+          "security-seals",
+          "testimonials",
+          "awards",
+          "press-mentions",
+          "money-back-guarantee",
+          "certifications"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional analyst notes or agent observations."
+    }
+  }
+}

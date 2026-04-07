@@ -106,6 +106,37 @@ export default defineSchema({
     .index("by_parent_slug", ["parentId", "slug"])
     .index("by_numerical_weight", ["numericalWeight"]),
 
+  // ─── Redesign-AI: Input Layer ─────────────────────────────────────────────
+  //
+  // Each row is a business lead ingested by the Analyzer Agent.
+  // Leads with visualScore < 4 are primary redesign targets.
+
+  redesignLeads: defineTable({
+    businessName: v.string(),
+    url: v.string(),
+    visualScore: v.number(),
+    hasMobileResponsiveness: v.boolean(),
+    ctaCount: v.number(),
+    loadTimeSpeed: v.number(),
+    trustSignals: v.array(v.union(
+      v.literal("reviews"),
+      v.literal("social-proof"),
+      v.literal("security-seals"),
+      v.literal("testimonials"),
+      v.literal("awards"),
+      v.literal("press-mentions"),
+      v.literal("money-back-guarantee"),
+      v.literal("certifications"),
+    )),
+    notes: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_visual_score", ["visualScore"])
+    .index("by_url", ["url"])
+    .index("by_mobile_responsiveness", ["hasMobileResponsiveness"]),
+
   // Junction: one sticker can belong to many taxonomy nodes
   stickerTaxonomyLinks: defineTable({
     stickerId: v.id("stickers"),
