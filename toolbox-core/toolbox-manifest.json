@@ -1,11 +1,79 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
   "tools": [
+    {
+      "id": "prompt-archive",
+      "name": "Linguistic Forge — Prompt Archive",
+      "path": "../toolbox/tools/linguistic-forge/prompt-archive.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Prompt Mutation System",
+      "pillarIndex": 23,
+      "exports": [
+        "PromptArchive",
+        "InMemoryPromptArchive",
+        "createSupabasePromptArchive",
+        "generatePromptId",
+        "blankFitness",
+        "formatPromptRecord"
+      ],
+      "dependencies": ["telemetry-logger", "feedback-scorer"],
+      "taxonomyDomains": ["Linguistic-Evolution"],
+      "mutationTypes": ["SEED", "TONE", "STRUCTURE", "CONSTRAINT", "CROSSOVER", "MANUAL"],
+      "promptStatuses": ["CANDIDATE", "ACTIVE", "ARCHIVED"],
+      "supabaseTable": "prompt_archive",
+      "storageAdapters": ["InMemoryPromptArchive", "createSupabasePromptArchive"],
+      "description": "Indexed store for all prompt templates in the Sovereign Mainframe. Each PromptRecord carries: template (raw string with {{variable}} placeholders), pillarId, agentRole, generation (0=seed), parentIds[], mutationType, status (CANDIDATE/ACTIVE/ARCHIVED), PromptFitness (score[0,1], invocations, successCount, retryCount, abandonCount, avgLatencyMs, avgConfidence, lastEvaluatedAt), tags[], lineage. PromptArchive methods: seed() (registers a new gen-0 SEED prompt), register(), get(), find(filter), getBest(pillarId, limit), getActive(), getCandidates(), updateFitness() (integrates scores from FeedbackScorer), activate(), archive(), applyABResult(winnerId, loserId) (promotes winner, archives loser — called by FitnessEvaluator), getLineage() (walks parentIds tree), pillarStats(). Two adapters: InMemoryPromptArchive (Map-based, circular, sorted by score) and createSupabasePromptArchive (persistent REST — requires prompt_archive table with JSONB fitness column and score index)."
+    },
+    {
+      "id": "mutation-engine",
+      "name": "Linguistic Forge — Mutation Engine",
+      "path": "../toolbox/tools/linguistic-forge/mutation-engine.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Prompt Mutation System",
+      "pillarIndex": 23,
+      "exports": [
+        "MutationEngine",
+        "createRuleMutator",
+        "createLlmMutator",
+        "formatMutationSummary",
+        "formatCrossoverSummary"
+      ],
+      "dependencies": ["prompt-archive"],
+      "taxonomyDomains": ["Linguistic-Evolution"],
+      "perturbationTypes": ["TONE", "STRUCTURE", "CONSTRAINT"],
+      "crossoverStrategies": ["INTERLEAVE", "PREFIX", "SUFFIX"],
+      "mutatorBackends": ["createRuleMutator (deterministic, no API)", "createLlmMutator (OpenAI-powered)"],
+      "description": "Evolutionary operators for prompt templates. Two operator families: Perturbation (perturb(parent) → 3 CANDIDATE PromptRecords, one per type) and Crossover (crossover(parentA, parentB, strategy) → 1 child PromptRecord). Perturbation types — TONE: detects current register and flips it (formal↔casual) or applies assertive prefix / curious suffix; rule-based via 20+ regex substitutions or LLM rewrite. STRUCTURE: reverses paragraph blocks, converts bullet↔numbered lists; LLM mode rewrites instruction ordering. CONSTRAINT: adds/removes one output constraint (word limit, format, scope) cycling through 5 presets; LLM mode reasons about appropriate constraint changes. Crossover strategies — INTERLEAVE: alternates paragraph blocks from both parents, deduplicates adjacent identicals; PREFIX: parent A preamble + parent B body; SUFFIX: parent A body + parent B closing. Two backends: createRuleMutator() (fully deterministic, zero API calls, 400 lines of pure string manipulation) and createLlmMutator(opts) (OpenAI-compatible, temperature=0.7, max_tokens=1024). evolveGeneration(prompts[]) runs a full round: select top-2 elite → perturb best → crossover top-2 with all 3 strategies → return 6 new CANDIDATEs."
+    },
+    {
+      "id": "fitness-evaluator",
+      "name": "Linguistic Forge — Fitness Evaluator",
+      "path": "../toolbox/tools/linguistic-forge/fitness-evaluator.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Prompt Mutation System",
+      "pillarIndex": 23,
+      "exports": [
+        "FitnessEvaluator",
+        "createMockRunFn",
+        "createLlmRunFn",
+        "formatABReport",
+        "formatTestHistory"
+      ],
+      "dependencies": ["prompt-archive", "telemetry-logger"],
+      "taxonomyDomains": ["Linguistic-Evolution"],
+      "evaluationModes": ["SIMULATED", "SHADOW", "SEQUENTIAL"],
+      "scoreWeights": { "successRate": 0.50, "inverseAbandon": 0.25, "avgConfidence": 0.15, "latencyScore": 0.10 },
+      "runFnFactories": ["createMockRunFn (stochastic mock)", "createLlmRunFn (OpenAI-compatible)"],
+      "description": "A/B test engine for prompt variants. Three evaluation modes — SIMULATED: runs both arms concurrently against every test input, collects RunResult[], logs to TelemetryLogger. SEQUENTIAL: runs control arm first then challenger arm against same inputs (reduces concurrency bias). SHADOW: control arm serves real requests synchronously; challenger runs fire-and-forget in background (output discarded). Scoring per arm uses same weighted model as FeedbackScorer (successRate×0.50 + inverseAbandon×0.25 + avgConfidence×0.15 + latencyScore×0.10). Winner selection: if |delta| < minDelta (default 0.02) → TIE (control retained); otherwise highest score wins. After test: both prompts' fitness scores updated in PromptArchive; winner set ACTIVE, loser ARCHIVED (archive.applyABResult). ABTestReport includes: testId, mode, both ArmStats (runs/successes/retries/abandons/avgLatencyMs/avgConfidence/score), winner, scoreDelta, applied flag, notes string. Two RunFn factories: createMockRunFn(successRate, avgLatencyMs, jitter) for NAS dry-runs; createLlmRunFn(opts) infers outcome from response length heuristic."
+    },
     {
       "id": "telemetry-logger",
       "name": "Evolution Engine — Telemetry Logger",
