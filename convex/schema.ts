@@ -166,6 +166,34 @@ export default defineSchema({
     .index("by_url", ["url"])
     .index("by_mobile_responsiveness", ["hasMobileResponsiveness"]),
 
+  // ─── Merch Designs: MAGA POD Layer ──────────────────────────────────────────
+  //
+  // Each design carries an acronym, its expanded meaning, a gematria weight,
+  // a Synology high-res path, and a product type.
+  // Linked to the taxonomy table for Spiritual Domain / General categorization.
+
+  merchDesigns: defineTable({
+    acronym: v.string(),
+    fullMeaning: v.string(),
+    gematriaWeight: v.number(),
+    highResPath: v.string(),
+    productType: v.union(
+      v.literal("tee"),
+      v.literal("hoodie"),
+      v.literal("sticker"),
+      v.literal("mug"),
+    ),
+    taxonomyId: v.optional(v.id("taxonomy")),
+    isActive: v.boolean(),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_acronym", ["acronym"])
+    .index("by_gematria_weight", ["gematriaWeight"])
+    .index("by_product_type", ["productType"])
+    .index("by_taxonomy", ["taxonomyId"]),
+
   // Junction: one sticker can belong to many taxonomy nodes
   stickerTaxonomyLinks: defineTable({
     stickerId: v.id("stickers"),
