@@ -1,11 +1,64 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
   "tools": [
+    {
+      "id": "telemetry-logger",
+      "name": "Evolution Engine — Telemetry Logger",
+      "path": "../toolbox/tools/evolution-engine/telemetry-logger.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Telemetry & Feedback Ingestion",
+      "pillarIndex": "17-EVO",
+      "exports": [
+        "TelemetryLogger",
+        "InMemoryTelemetryStore",
+        "createSupabaseTelemetryStore",
+        "hashPayload",
+        "formatTelemetryLine",
+        "exportNdjson"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["Universal-Learning"],
+      "outcomeSignals": ["SUCCESS", "RETRY", "ABANDON"],
+      "hashAlgorithm": "FNV-1a 32-bit",
+      "storageAdapters": ["InMemoryTelemetryStore (circular buffer)", "createSupabaseTelemetryStore (persistent)"],
+      "supabaseTable": "agent_telemetry",
+      "description": "Structured telemetry recording system for every agent invocation. Captures [timestamp, agent_id, pillar_id, input_hash, output_hash, latency_ms, outcome, confidence, retry_count, tags, metadata] per event. Outcome signals: SUCCESS (agent completed, output accepted), RETRY (CRITIC rejected output, agent re-runs), ABANDON (max retries exhausted). Hashing via FNV-1a 32-bit on JSON-serialised payload — not cryptographic, used for deduplication and drift detection. Two storage adapters: InMemoryTelemetryStore (circular buffer, configurable maxSize, drop-oldest) and createSupabaseTelemetryStore (persistent, full CRUD via Supabase REST API — requires agent_telemetry table). TelemetryLogger provides: log(), logSuccess(), logRetry(), logAbandon(), startTimer() (returns stop(output, outcome) closure for automatic latency capture), getHistory(filter), pillarSummary(pillarId). pillarSummary returns: total, successes, retries, abandons, avgLatencyMs, avgConfidence, successRate."
+    },
+    {
+      "id": "feedback-scorer",
+      "name": "Evolution Engine — Feedback Scorer",
+      "path": "../toolbox/tools/evolution-engine/feedback-scorer.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Telemetry & Feedback Ingestion",
+      "pillarIndex": "17-EVO",
+      "exports": [
+        "FeedbackScorer",
+        "createRetryWindowHandler",
+        "createAlertHandler",
+        "createCompositeHandler",
+        "formatScoreboard",
+        "formatPillarScore"
+      ],
+      "dependencies": ["telemetry-logger"],
+      "taxonomyDomains": ["Universal-Learning"],
+      "scoreWeights": {
+        "successRate":    0.50,
+        "inverseAbandon": 0.25,
+        "avgConfidence":  0.15,
+        "latencyScore":   0.10
+      },
+      "grades": ["OPTIMAL ≥0.95", "HEALTHY ≥0.85", "WARNING ≥0.70", "CRITICAL ≥0.50", "FAILING <0.50"],
+      "degradationThreshold": 0.85,
+      "builtInHandlers": ["retry-window-handler", "alert-handler", "composite-handler"],
+      "description": "Rolling Confidence Score engine for all Sovereign Mainframe pillars. Consumes TelemetryLogger history; computes a [0,1] score per pillar from four weighted factors: successRate (0.50), inverseAbandon (0.25), avgConfidence (0.15), latencyScore (0.10 — penalises latency above latencyCapMs). Configurable rolling window (default 24h), minimum event threshold before scoring (default 5 — returns neutral 1.0 below threshold). Five grades: OPTIMAL/HEALTHY/WARNING/CRITICAL/FAILING. Automatic Optimization: when score < degradationThreshold (default 0.85), all registered OptimizationHandlers for that pillar fire concurrently. Handlers receive PillarDiagnostic: score breakdown, last 50 telemetry records, dominant failure mode (RETRY/ABANDON/none), weakest agent (most non-SUCCESS events), and a natural-language suggestion. Built-in handlers: createRetryWindowHandler (lowers hallucinationThreshold by configurable step, min 0.50, stored in passed configStore Map), createAlertHandler (structured console warn + optional webhook POST), createCompositeHandler (chains N handlers, catches individual failures). evaluateAll(pillarIds[]) returns ScoreboardReport sorted worst-first. formatScoreboard() renders ASCII scoreboard with score bars, grades, and optimization counts."
+    },
     {
       "id": "naming-tool",
       "name": "StickerEngine — Naming Tool",
