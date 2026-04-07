@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,6 +72,54 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "schema-generator",
+      "name": "Yellow Pages — Schema Generator",
+      "path": "../toolbox/tools/data-modeling/schema-generator.tool.ts",
+      "version": "1.0.0",
+      "type": "tool",
+      "pillar": "Yellow Pages",
+      "exports": [
+        "generateSchema",
+        "validateSchema",
+        "indexToColumnLetter",
+        "toSnakeCase"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "BUSINESS-AUTOMATION",
+      "description": "Takes a JSON Intent (description + field list) and outputs a structured column array with inferred data types, roles, SQL types, Sheets format strings, and a ready-to-use CREATE TABLE statement."
+    },
+    {
+      "id": "formula-engine",
+      "name": "Yellow Pages — Formula Engine",
+      "path": "../toolbox/tools/data-modeling/formula-engine.tool.ts",
+      "version": "1.0.0",
+      "type": "tool",
+      "pillar": "Yellow Pages",
+      "exports": [
+        "SUM",
+        "AVERAGE",
+        "COUNT",
+        "COUNTIF",
+        "SUMIF",
+        "VLOOKUP",
+        "XLOOKUP",
+        "INDEX_MATCH",
+        "GROWTH",
+        "TREND",
+        "FORECAST",
+        "CAGR",
+        "STDEV",
+        "PERCENTILE",
+        "CONCAT",
+        "generateFormulaSuite",
+        "colRange",
+        "tableRange"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "BUSINESS-AUTOMATION",
+      "description": "Generates Excel/Google Sheets compatible formula strings (SUM, VLOOKUP, GROWTH, FORECAST, CAGR, etc.) from column letters and FormulaContext. Platform-aware: handles Sheets vs Excel syntax differences."
     },
     {
       "id": "atmosphere-physics-engine",
@@ -168,6 +216,95 @@
             "parentSlug": "canopy-hypothesis",
             "dangerLevel": "safe",
             "sortOrder": 3
+          }
+        ]
+      }
+    ],
+    "domains": [
+      {
+        "name": "Business Automation",
+        "code": "BUSINESS-AUTOMATION",
+        "slug": "business-automation",
+        "type": "domain",
+        "parentSlug": null,
+        "dangerLevel": "safe",
+        "pillar": "Yellow Pages",
+        "pillarIndex": 8,
+        "linkedTools": ["schema-generator", "formula-engine"],
+        "description": "Eighth pillar of the Sovereign Mainframe. Automates business data modeling, spreadsheet formula generation, lead tracking, and Monte Carlo revenue projections for Yellow Pages-style business intelligence.",
+        "nodes": [
+          {
+            "name": "Data Modeling",
+            "code": "DATA-MODELING",
+            "slug": "data-modeling",
+            "type": "category",
+            "dangerLevel": "safe",
+            "sortOrder": 1,
+            "linkedTools": ["schema-generator"]
+          },
+          {
+            "name": "Schema Generation",
+            "code": "SCHEMA-GENERATION",
+            "slug": "schema-generation",
+            "type": "subcategory",
+            "parentSlug": "data-modeling",
+            "dangerLevel": "safe",
+            "sortOrder": 1
+          },
+          {
+            "name": "Type Inference",
+            "code": "TYPE-INFERENCE",
+            "slug": "type-inference",
+            "type": "subcategory",
+            "parentSlug": "data-modeling",
+            "dangerLevel": "safe",
+            "sortOrder": 2
+          },
+          {
+            "name": "Formula Automation",
+            "code": "FORMULA-AUTOMATION",
+            "slug": "formula-automation",
+            "type": "category",
+            "dangerLevel": "safe",
+            "sortOrder": 2,
+            "linkedTools": ["formula-engine"]
+          },
+          {
+            "name": "Aggregation Formulas",
+            "code": "AGGREGATION-FORMULAS",
+            "slug": "aggregation-formulas",
+            "type": "subcategory",
+            "parentSlug": "formula-automation",
+            "dangerLevel": "safe",
+            "sortOrder": 1
+          },
+          {
+            "name": "Lookup Formulas",
+            "code": "LOOKUP-FORMULAS",
+            "slug": "lookup-formulas",
+            "type": "subcategory",
+            "parentSlug": "formula-automation",
+            "dangerLevel": "safe",
+            "sortOrder": 2
+          },
+          {
+            "name": "Growth and Forecast",
+            "code": "GROWTH-AND-FORECAST",
+            "slug": "growth-and-forecast",
+            "type": "subcategory",
+            "parentSlug": "formula-automation",
+            "dangerLevel": "safe",
+            "sortOrder": 3
+          },
+          {
+            "name": "Monte Carlo Simulation",
+            "code": "MONTE-CARLO-SIMULATION",
+            "slug": "monte-carlo-simulation",
+            "type": "category",
+            "dangerLevel": "safe",
+            "sortOrder": 3,
+            "dockerService": "simulation",
+            "apiEndpoint": "http://localhost:5050/simulate"
           }
         ]
       }

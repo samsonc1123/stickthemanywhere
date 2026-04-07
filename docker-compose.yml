@@ -70,6 +70,97 @@ services:
     #   docker exec mainframe_agents ollama pull llama3
     #   docker exec mainframe_agents ollama pull mistral
 
+  # ── Simulation — Monte Carlo Engine ──────────────────────────────────────────
+  # Runs probabilistic simulations on structured datasets.
+  # Exposes a REST API on port 5050.
+  # POST /simulate  → body: { schema, iterations, variables }
+  # GET  /results/:id → retrieve a completed simulation run
+  #
+  # To run a quick smoke test after start:
+  #   curl http://localhost:5050/health
+  simulation:
+    image: node:20-alpine
+    container_name: mainframe_simulation
+    restart: unless-stopped
+    working_dir: /app/simulation
+    volumes:
+      - ./toolbox/tools/data-modeling:/app/simulation/tools
+      - simulation_results:/app/simulation/results
+    command: >
+      sh -c "
+        npm init -y &&
+        npm install express &&
+        node -e \"
+          const express = require('express');
+          const crypto  = require('crypto');
+          const fs      = require('fs');
+          const app     = express();
+          app.use(express.json());
+
+          app.get('/health', (_, res) => res.json({ status: 'ok', service: 'monte-carlo' }));
+
+          /* Monte Carlo simulation endpoint */
+          app.post('/simulate', (req, res) => {
+            const { iterations = 10000, variables = {}, label = 'run' } = req.body;
+            const id      = crypto.randomUUID();
+            const results = [];
+
+            for (let i = 0; i < iterations; i++) {
+              const trial = {};
+              for (const [key, cfg] of Object.entries(variables)) {
+                const { distribution = 'uniform', min = 0, max = 1, mean, stddev } = cfg;
+                if (distribution === 'normal' && mean !== undefined && stddev !== undefined) {
+                  /* Box-Muller transform */
+                  const u1 = Math.random(), u2 = Math.random();
+                  trial[key] = mean + stddev * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                } else {
+                  trial[key] = min + Math.random() * (max - min);
+                }
+              }
+              results.push(trial);
+            }
+
+            /* Summarise each variable */
+            const summary = {};
+            for (const key of Object.keys(variables)) {
+              const vals = results.map(r => r[key]).sort((a,b) => a-b);
+              const n    = vals.length;
+              const mean = vals.reduce((s,v) => s+v, 0) / n;
+              const variance = vals.reduce((s,v) => s + (v-mean)**2, 0) / n;
+              summary[key] = {
+                mean: mean.toFixed(4),
+                stddev: Math.sqrt(variance).toFixed(4),
+                p10: vals[Math.floor(n*0.10)].toFixed(4),
+                p50: vals[Math.floor(n*0.50)].toFixed(4),
+                p90: vals[Math.floor(n*0.90)].toFixed(4),
+                min: vals[0].toFixed(4),
+                max: vals[n-1].toFixed(4),
+              };
+            }
+
+            const run = { id, label, iterations, summary, completedAt: new Date().toISOString() };
+            fs.mkdirSync('/app/simulation/results', { recursive: true });
+            fs.writeFileSync('/app/simulation/results/' + id + '.json', JSON.stringify(run, null, 2));
+            res.json(run);
+          });
+
+          /* Retrieve a saved simulation result */
+          app.get('/results/:id', (req, res) => {
+            const p = '/app/simulation/results/' + req.params.id + '.json';
+            if (!fs.existsSync(p)) return res.status(404).json({ error: 'Not found' });
+            res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+          });
+
+          app.listen(5050, () => console.log('Monte Carlo engine running on :5050'));
+        \"
+      "
+    environment:
+      NODE_ENV: production
+    ports:
+      - "5050:5050"
+    networks:
+      - mainframe
+
   # ── UI — Next.js — Intelligence Dashboard ────────────────────────────────────
   ui:
     image: node:20-alpine
@@ -97,6 +188,8 @@ volumes:
   db_data:
     driver: local
   ollama_data:
+    driver: local
+  simulation_results:
     driver: local
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
