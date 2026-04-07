@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,6 +72,56 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "agent-trinity-protocol",
+      "name": "Anti-Fragile Orchestration — Agent Trinity Protocol",
+      "path": "../toolbox/tools/healing-vision/agent-trinity-protocol.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Anti-Fragile Orchestration and Vision-to-3D Logic",
+      "pillarIndex": 18,
+      "exports": [
+        "runTrinityProtocol",
+        "buildRuleCritic",
+        "passThroughCritic",
+        "alwaysFailCritic",
+        "TrinityDegradedError",
+        "formatTrinityAudit",
+        "aggregateIssues"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["NEURAL-INFRASTRUCTURE", "Sovereign-Correction"],
+      "loopArchitecture": "WORKER → CRITIC → FIXER (Iterative Best-Response)",
+      "hallucinationThreshold": 0.95,
+      "statuses": ["CONVERGED", "DEGRADED"],
+      "severityLevels": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+      "description": "Generic three-agent anti-fragile closed loop: WORKER produces an output, CRITIC evaluates it returning confidence [0,1] + typed CriticIssue[], FIXER corrects it. If CRITIC confidence < hallucinationThreshold (default 0.95), FIXER is invoked and the loop restarts — the system grows stronger under repeated correction. Blended stepSize update prevents oscillation. Returns CONVERGED when threshold is met or DEGRADED (best-seen output) after maxRounds. TrinityDegradedError thrown optionally. Fully generic over input type I and output type T — works for text, JSON, geometry, code. buildRuleCritic() helper composes validation rules into a critic agent. formatTrinityAudit() emits a per-round log string. aggregateIssues() groups all round issues by severity."
+    },
+    {
+      "id": "vision-to-geometry",
+      "name": "Vision-to-3D Logic — Vision-to-Geometry Tool",
+      "path": "../toolbox/tools/healing-vision/vision-to-geometry.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Anti-Fragile Orchestration and Vision-to-3D Logic",
+      "pillarIndex": 18,
+      "exports": [
+        "visionToGeometry",
+        "DEFAULT_SEMANTIC_MAP",
+        "filterByPrimitive",
+        "filterByRedesignTag",
+        "formatSceneSummary",
+        "exportSceneJSON"
+      ],
+      "dependencies": [],
+      "taxonomyDomains": ["NEURAL-INFRASTRUCTURE", "Sovereign-Correction"],
+      "primitives": ["Cube", "Sphere", "Plane", "Cylinder", "Cone"],
+      "semanticCategories": ["buildings", "ground/surfaces", "vegetation", "vehicles", "street-furniture", "sky/atmosphere", "people"],
+      "depthModes": ["bbox-area-inverse (default)", "depth-map median sampling"],
+      "redesignAIIntegration": true,
+      "defaultMappings": 30,
+      "description": "Converts 2D vision model output (bounding boxes + semantic labels) into a 3D SceneGraph of Primitive3D nodes ready for Redesign-AI. Semantic label → primitive mapping: building/skyscraper/house → Cube; tree/bush/sphere-like → Sphere; road/floor/water/grass → Plane; pole/tower/person → Cylinder; roof/cone-like → Cone. 30+ default COCO/ADE20K/cityscapes categories. Z-depth from bbox area (larger = closer) or depth-map median sampling. MaterialHint per category (baseColor, roughness, metallic, transparent, emissive). Redesign-AI tags auto-appended to every node. filterByPrimitive() and filterByRedesignTag() for downstream queries. exportSceneJSON() emits renderer-ready JSON. SemanticMappingConfig fully overridable."
     },
     {
       "id": "multi-magnitude-processor",
