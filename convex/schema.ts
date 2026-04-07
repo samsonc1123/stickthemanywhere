@@ -194,6 +194,47 @@ export default defineSchema({
     .index("by_product_type", ["productType"])
     .index("by_taxonomy", ["taxonomyId"]),
 
+  // ─── Trinity Brand: Frequency Sync Layer ─────────────────────────────────────
+  //
+  // Products carry a frequencyHz value pulled from the GAB vault.
+  // Rooms track which devices are active and their current sync state.
+
+  trinityProducts: defineTable({
+    productName: v.string(),
+    function: v.union(
+      v.literal("relief"),
+      v.literal("alignment"),
+      v.literal("geometric"),
+    ),
+    frequencyHz: v.number(),
+    syncEnabled: v.boolean(),
+    taxonomyId: v.optional(v.id("taxonomy")),
+    notes: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_function", ["function"])
+    .index("by_frequency", ["frequencyHz"])
+    .index("by_taxonomy", ["taxonomyId"]),
+
+  atmosphereRooms: defineTable({
+    roomName: v.string(),
+    activeFrequencyHz: v.number(),
+    trinityProductId: v.optional(v.id("trinityProducts")),
+    devices: v.object({
+      pacifier:  v.object({ synced: v.boolean(), frequencyHz: v.number() }),
+      mattress:  v.object({ synced: v.boolean(), frequencyHz: v.number() }),
+      lighting:  v.object({ synced: v.boolean(), frequencyHz: v.number() }),
+    }),
+    lastSyncedAt: v.optional(v.number()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_frequency", ["activeFrequencyHz"])
+    .index("by_product", ["trinityProductId"]),
+
   // Junction: one sticker can belong to many taxonomy nodes
   stickerTaxonomyLinks: defineTable({
     stickerId: v.id("stickers"),
