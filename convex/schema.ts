@@ -125,6 +125,11 @@ export default defineSchema({
     immediateAction: v.string(),
     symptoms: v.optional(v.array(v.string())),
     antidote: v.optional(v.string()),
+    primateSafety: v.optional(v.object({
+      fridgeAccessRisk: v.boolean(),
+      dexterityWarning: v.string(),
+      kombuchaCompatibility: v.boolean(),
+    })),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
