@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,6 +72,56 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "tool-packager",
+      "name": "Tool Manufacturing — Public API Packager",
+      "path": "../toolbox/tools/factory/tool-packager.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Tool Manufacturing",
+      "pillarIndex": 15,
+      "exports": [
+        "ApiKeyManager",
+        "PublicApiGateway",
+        "WRAPPED_TOOL_REGISTRY",
+        "TIER_PRICING_CENTS_PER_1K",
+        "TIER_DAILY_LIMIT",
+        "generateApiKey",
+        "buildPublicApiResponse",
+        "validateApiRequest",
+        "exportUsageReport"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "MARKETPLACE-INFRASTRUCTURE",
+      "wrappedTools": ["gematria-scorer", "redesign-analyser", "3d-globe-query"],
+      "port": 4002,
+      "apiKeyTiers": ["FREE", "STARTER", "PRO", "ENTERPRISE", "INTERNAL"],
+      "envVars": ["PUBLIC_API_SIGNING_SECRET", "PUBLIC_API_PORT"],
+      "description": "Wraps internal Sovereign Mainframe engines (Gematria Scorer, Redesign Analyser, 3D Globe API) into versioned, metered Public API endpoints. API-Key management system: generate, validate, rate-limit (100–10,000 req/day by tier), rotate, revoke, and meter usage with per-tool breakdowns and USD-cent revenue estimates. Standalone Bun server on port 4002."
+    },
+    {
+      "id": "affiliate-link-manager",
+      "name": "Tool Manufacturing — Affiliate Link Manager",
+      "path": "../toolbox/tools/factory/affiliate-link-manager.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Tool Manufacturing",
+      "pillarIndex": 15,
+      "exports": [
+        "AffiliateLinkManager",
+        "SEED_OFFERS",
+        "buildTrackedUrl",
+        "estimateAnnualRevenueCents",
+        "mergeOfferUpdates"
+      ],
+      "dependencies": [],
+      "linkedTools": ["ad-sequencer", "typing-engine"],
+      "taxonomyDomain": "MARKETPLACE-INFRASTRUCTURE",
+      "linkedPillars": [11],
+      "affiliatePrograms": ["amazon-associates", "clickbank", "shareasale", "cj-affiliate", "impact", "digistore24", "custom"],
+      "seedOfferCount": 8,
+      "description": "Full affiliate link lifecycle: seed registry (8 offers across health, tech, software, books, crypto), Pillar 11 slot mapping (ad-slot / typing-segment / banner / product-card), HTTP HEAD health-check sweep with configurable TTL (1 h default), dead-link auto-swap with fallback resolution (named fallback → highest-priority active in same category), swap event log, leakage report, and offer scraper adapter for network APIs. Zero revenue leakage guarantee: every dead slot is replaced or flagged UNFILLED."
     },
     {
       "id": "api-negotiator",
@@ -1125,6 +1175,105 @@
               { "id": "tx-007", "name": "Zinc supplementation",             "class": "ADJUNCT",         "isPreferred": false },
               { "id": "tx-008", "name": "Topical corticosteroids",          "class": "CONTRAINDICATED", "isPreferred": false }
             ]
+          }
+        ]
+      },
+      {
+        "name": "Marketplace Infrastructure",
+        "code": "MARKETPLACE-INFRASTRUCTURE",
+        "slug": "marketplace-infrastructure",
+        "type": "domain",
+        "parentSlug": null,
+        "dangerLevel": "safe",
+        "pillar": "Tool Manufacturing",
+        "pillarIndex": 15,
+        "linkedTools": ["tool-packager", "affiliate-link-manager"],
+        "linkedDomains": ["COMMERCIAL-ENGINE", "KINGDOM-FINANCE", "UNIVERSAL-GOVERNANCE"],
+        "description": "Fifteenth pillar of the Sovereign Mainframe. Marketplace Infrastructure governs the external commercialisation of internal tools — packaging them as metered Public APIs with API-key management, and ensuring all Pillar 11 affiliate slots remain revenue-generating through automatic dead-link detection and replacement.",
+        "nodes": [
+          {
+            "name": "Tool Manufacturing",
+            "code": "TOOL-MANUFACTURING",
+            "slug": "tool-manufacturing",
+            "type": "category",
+            "dangerLevel": "safe",
+            "sortOrder": 1,
+            "pillarIndex": 15,
+            "linkedTools": ["tool-packager", "affiliate-link-manager"]
+          },
+          {
+            "name": "Public API Packaging",
+            "code": "PUBLIC-API-PACKAGING",
+            "slug": "public-api-packaging",
+            "type": "subcategory",
+            "parentSlug": "tool-manufacturing",
+            "dangerLevel": "safe",
+            "sortOrder": 1,
+            "linkedTools": ["tool-packager"],
+            "wrappedTools": [
+              {
+                "id": "gematria-scorer",
+                "endpointPath": "/v1/gematria",
+                "minTier": "FREE",
+                "dailyAllowance": { "FREE": 100, "STARTER": 1000, "PRO": 10000, "ENTERPRISE": "unlimited" }
+              },
+              {
+                "id": "redesign-analyser",
+                "endpointPath": "/v1/redesign",
+                "minTier": "STARTER",
+                "dailyAllowance": { "FREE": 0, "STARTER": 1000, "PRO": 10000, "ENTERPRISE": "unlimited" }
+              },
+              {
+                "id": "3d-globe-query",
+                "endpointPath": "/v1/globe",
+                "minTier": "PRO",
+                "dailyAllowance": { "FREE": 0, "STARTER": 0, "PRO": 10000, "ENTERPRISE": "unlimited" }
+              }
+            ],
+            "description": "PublicApiGateway exposes internal tools as versioned REST endpoints. API key format: smf_{tier}_{32-hex}. Key lifecycle: create, validate, rotate, revoke. Metering: per-tool daily counters, overage billing in USD cents ($0.20–0.50 / 1 000 overage calls by tier). Standalone Bun server port 4002."
+          },
+          {
+            "name": "API Key Management",
+            "code": "API-KEY-MANAGEMENT",
+            "slug": "api-key-management",
+            "type": "subcategory",
+            "parentSlug": "tool-manufacturing",
+            "dangerLevel": "caution",
+            "sortOrder": 2,
+            "linkedTools": ["tool-packager"],
+            "tiers": [
+              { "tier": "FREE",       "dailyLimit": 100,      "overageCentsPer1k": 0,  "note": "Hard-capped — no overage billing" },
+              { "tier": "STARTER",    "dailyLimit": 1000,     "overageCentsPer1k": 50, "note": "$0.50 / 1 000 overage" },
+              { "tier": "PRO",        "dailyLimit": 10000,    "overageCentsPer1k": 30, "note": "$0.30 / 1 000 overage" },
+              { "tier": "ENTERPRISE", "dailyLimit": "unlimited", "overageCentsPer1k": 20, "note": "Negotiated SLA" },
+              { "tier": "INTERNAL",   "dailyLimit": "unlimited", "overageCentsPer1k": 0,  "note": "The Keymaker — sovereign, no billing" }
+            ],
+            "description": "ApiKeyManager: in-memory store (port to Supabase/Convex for persistence). issueToken/rotate/revoke lifecycle. Per-key allowedTools, allowedOrigins, rateLimitRpdOverride. exportUsageReport() returns 30-day rollup with revenue estimates."
+          },
+          {
+            "name": "Affiliate Link Management",
+            "code": "AFFILIATE-LINK-MANAGEMENT",
+            "slug": "affiliate-link-management",
+            "type": "subcategory",
+            "parentSlug": "tool-manufacturing",
+            "dangerLevel": "safe",
+            "sortOrder": 3,
+            "linkedTools": ["affiliate-link-manager"],
+            "linkedPillar": 11,
+            "programs": ["amazon-associates", "clickbank", "shareasale", "cj-affiliate", "impact", "digistore24", "custom"],
+            "slotTypes": ["ad-slot", "typing-segment", "banner", "product-card"],
+            "description": "AffiliateLinkManager: seed registry with 8 built-in offers (health, tech, software, books, crypto). Maps offers to Pillar 11 ad-slots + typing-segments. HTTP HEAD health sweep every 1 h (configurable TTL). Dead-link auto-swap: named fallback → highest-priority active in same category → UNFILLED flag. SwapEvent log for audit trail. scrapeAffiliateOffers() adapter for live network feeds. estimateAnnualRevenueCents() forecasting helper."
+          },
+          {
+            "name": "Zero Revenue Leakage Protocol",
+            "code": "ZERO-REVENUE-LEAKAGE",
+            "slug": "zero-revenue-leakage",
+            "type": "subcategory",
+            "parentSlug": "tool-manufacturing",
+            "dangerLevel": "safe",
+            "sortOrder": 4,
+            "linkedTools": ["affiliate-link-manager"],
+            "description": "Guarantee: no Pillar 11 ad slot remains dead longer than one health-check TTL cycle. Swap resolution order: 1) named fallbackOfferId on the dead offer, 2) highest-priority ACTIVE offer in same category, 3) UNFILLED — triggers onUnfilled() callback and appears in getRevenueLeakageReport(). All swaps emit a typed SwapEvent with SwapReason, timestampMs, and descriptive note."
           }
         ]
       }
