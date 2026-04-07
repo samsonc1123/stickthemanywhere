@@ -1,0 +1,120 @@
+name: Sync to Synology NAS
+
+# ─── Triggers ─────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Only fire when tools or agents actually change — skip unrelated commits
+      - "toolbox-core/tools/**"
+      - "toolbox-core/agents/**"
+      - "toolbox-core/pipelines/**"
+      - "toolbox-core/schemas/**"
+      - "core-logic/**"
+
+  # Allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (show what would be synced, do not transfer files)"
+        required: false
+        default: "false"
+
+# ─── Jobs ─────────────────────────────────────────────────────────────────────
+jobs:
+  sync:
+    name: rsync → Synology NAS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Install rsync (available by default on ubuntu-latest, kept explicit)
+      - name: Install rsync
+        run: sudo apt-get install -y rsync
+
+      # 3. Write the SSH private key from GitHub Secrets
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.NAS_SSH_PRIVATE_KEY }}" > ~/.ssh/nas_deploy
+          chmod 600 ~/.ssh/nas_deploy
+          # Trust the NAS host to avoid interactive prompt
+          ssh-keyscan -p ${{ vars.NAS_SSH_PORT || 22 }} ${{ secrets.NAS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      # 4a. Dry-run path — show diff without transferring
+      - name: Dry run (preview only)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "=== DRY RUN — no files will be transferred ==="
+          rsync \
+            --dry-run \
+            --archive \
+            --verbose \
+            --delete \
+            --checksum \
+            -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
+            toolbox-core/tools/ \
+            toolbox-core/agents/ \
+            core-logic/ \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_DEST_PATH }}/
+
+      # 4b. Live sync — tools and agents directories
+      - name: Sync /toolbox-core/tools
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          rsync \
+            --archive \
+            --verbose \
+            --delete \
+            --checksum \
+            --timeout=30 \
+            -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
+            toolbox-core/tools/ \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_DEST_PATH }}/tools/
+
+      - name: Sync /toolbox-core/agents
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          rsync \
+            --archive \
+            --verbose \
+            --delete \
+            --checksum \
+            --timeout=30 \
+            -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
+            toolbox-core/agents/ \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_DEST_PATH }}/agents/
+
+      - name: Sync /core-logic
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          rsync \
+            --archive \
+            --verbose \
+            --delete \
+            --checksum \
+            --timeout=30 \
+            -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
+            core-logic/ \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_DEST_PATH }}/core-logic/
+
+      # 5. Confirm what landed on the NAS
+      - name: Verify remote listing
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          ssh \
+            -i ~/.ssh/nas_deploy \
+            -p ${{ vars.NAS_SSH_PORT || 22 }} \
+            -o StrictHostKeyChecking=yes \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }} \
+            "ls -la ${{ secrets.NAS_DEST_PATH }}/"
+
+      # 6. Clean up the private key from the runner's disk
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/nas_deploy

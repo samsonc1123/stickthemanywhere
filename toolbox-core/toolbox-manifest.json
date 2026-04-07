@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "toolbox-core",
+  "version": "1.0.0",
+  "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
+  "runtime": "bun >= 1.2 | node >= 20",
+  "maintainer": "The Keymaker",
+  "tools": [
+    {
+      "id": "naming-tool",
+      "name": "StickerEngine — Naming Tool",
+      "path": "tools/naming.tool.ts",
+      "version": "1.0.0",
+      "type": "tool",
+      "exports": [
+        "toCanonicalCode",
+        "toSlug",
+        "toDisplayName",
+        "parseCanonical",
+        "validateCode",
+        "buildStickerCode",
+        "extractCategory",
+        "normalizeFilename",
+        "batchNormalize"
+      ],
+      "dependencies": [],
+      "description": "Normalizes raw strings into canonical uppercase-hyphen sticker codes. Provides slug generation, display name derivation, and batch normalization."
+    },
+    {
+      "id": "taxonomy-tool",
+      "name": "StickerEngine — Taxonomy Tool",
+      "path": "tools/taxonomy.tool.ts",
+      "version": "1.0.0",
+      "type": "tool",
+      "exports": [
+        "toSlug",
+        "resolveSlug",
+        "buildTree",
+        "getAncestorPath",
+        "getDescendants",
+        "getChildren",
+        "upsertNode",
+        "filterByDanger",
+        "validateTree",
+        "DANGER_COLOR"
+      ],
+      "dependencies": [],
+      "description": "In-memory taxonomy tree operations. Mirrors Convex taxonomy table logic without DB imports. Supports upsert dedup, ancestor walks, danger-level filtering, and structural validation."
+    },
+    {
+      "id": "gematria-engine",
+      "name": "Gematria Engine",
+      "path": "../core-logic/engines.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "exports": [
+        "calculateGematria",
+        "reduceToDigit"
+      ],
+      "dependencies": [],
+      "description": "Standard Gematria (Mispar Hechrachi) calculator with optional extended sofit values and theosophical digit reduction."
+    },
+    {
+      "id": "redesign-analyzer",
+      "name": "Redesign Analyzer Engine",
+      "path": "../core-logic/engines.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "exports": [
+        "redesignAnalyzer",
+        "batchAnalyze"
+      ],
+      "dependencies": [],
+      "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    }
+  ],
+  "agents": [],
+  "pipelines": [],
+  "schemas": [],
+  "convexMirrors": [
+    {
+      "convexModule": "convex/taxonomy.ts",
+      "portableMirror": "tools/taxonomy.tool.ts",
+      "notes": "taxonomy.tool.ts is the DB-free equivalent. Run validateTree() before calling Convex upsertNode to catch errors early."
+    },
+    {
+      "convexModule": "convex/gematria.ts",
+      "portableMirror": "../core-logic/engines.ts (calculateGematria, reduceToDigit)",
+      "notes": "Identical letter tables and reduction algorithm. Safe to call on client without a Convex context."
+    }
+  ]
+}
