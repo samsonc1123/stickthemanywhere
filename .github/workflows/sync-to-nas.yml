@@ -12,6 +12,8 @@ on:
       - "toolbox-core/pipelines/**"
       - "toolbox-core/schemas/**"
       - "core-logic/**"
+      - "toolbox/tools/**"
+      - "nas-assets/**"
 
   # Allow manual trigger from the GitHub Actions UI
   workflow_dispatch:
@@ -102,6 +104,47 @@ jobs:
             -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
             core-logic/ \
             ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_DEST_PATH }}/core-logic/
+
+      - name: Sync /toolbox/tools (monetization + vision-veil)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          rsync \
+            --archive \
+            --verbose \
+            --delete \
+            --checksum \
+            --timeout=30 \
+            -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
+            toolbox/tools/ \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_DEST_PATH }}/toolbox-tools/
+
+      - name: Create 3D asset directories on NAS
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          ssh \
+            -i ~/.ssh/nas_deploy \
+            -p ${{ vars.NAS_SSH_PORT || 22 }} \
+            -o StrictHostKeyChecking=yes \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }} \
+            "mkdir -p \
+              /volume1/assets/3d-assets/models/food \
+              /volume1/assets/3d-assets/textures/ads \
+              /volume1/assets/3d-assets/textures/holographic \
+              /volume1/assets/3d-assets/textures/video \
+              /volume1/assets/3d-assets/hdri && \
+            echo '3D asset directories ready on NAS.'"
+
+      - name: Sync nas-assets manifest to NAS
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          rsync \
+            --archive \
+            --verbose \
+            --checksum \
+            --timeout=30 \
+            -e "ssh -i ~/.ssh/nas_deploy -p ${{ vars.NAS_SSH_PORT || 22 }} -o StrictHostKeyChecking=yes" \
+            nas-assets/3d-assets/ \
+            ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:/volume1/assets/3d-assets/
 
       # 5. Confirm what landed on the NAS
       - name: Verify remote listing

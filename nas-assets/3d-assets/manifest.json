@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "3D Assets Manifest",
+  "version": "1.0.0",
+  "nasTargetPath": "/volume1/assets/3d-assets",
+  "description": "Registry of all 3D food models, ad textures, and holographic assets stored on the Synology NAS. Synced from this repo via the GitHub Actions sync-to-nas workflow.",
+  "maintainer": "The Keymaker",
+  "syncedBy": ".github/workflows/sync-to-nas.yml",
+
+  "directories": {
+    "/volume1/assets/3d-assets/models/food": {
+      "description": "GLTF/GLB 3D food models for Yellow Pages restaurant ad rotations.",
+      "formats": ["gltf", "glb"],
+      "namingConvention": "FOOD-[ITEM]-[VARIANT]-v[VERSION].glb",
+      "examples": [
+        "FOOD-BURGER-CLASSIC-v1.glb",
+        "FOOD-PIZZA-MARGHERITA-v1.glb",
+        "FOOD-SUSHI-NIGIRI-v1.glb",
+        "FOOD-TACO-STREET-v1.glb"
+      ]
+    },
+    "/volume1/assets/3d-assets/textures/ads": {
+      "description": "Flat ad textures (PNG/WebP) mapped onto billboard planes in WebGL.",
+      "formats": ["png", "webp", "jpg"],
+      "namingConvention": "AD-[ADVERTISER-CODE]-[VARIANT]-[WIDTHxHEIGHT].png",
+      "examples": [
+        "AD-YP-RESTAURANT-PROMO-1024x512.png",
+        "AD-YP-MEDICAL-BANNER-2048x1024.png"
+      ]
+    },
+    "/volume1/assets/3d-assets/textures/holographic": {
+      "description": "Transparent RGBA textures for holographic overlay renders (spectral veil integration).",
+      "formats": ["png", "webp"],
+      "namingConvention": "HOLO-[LABEL]-[RESOLUTION].png",
+      "examples": [
+        "HOLO-UAP-OVERLAY-1024x1024.png",
+        "HOLO-ENTITY-FOCUS-512x512.png"
+      ]
+    },
+    "/volume1/assets/3d-assets/textures/video": {
+      "description": "Video textures (looping mp4/webm) for animated ad slots.",
+      "formats": ["mp4", "webm"],
+      "namingConvention": "VID-[ADVERTISER-CODE]-[DURATION-S].mp4",
+      "examples": [
+        "VID-YP-BURGER-06.mp4",
+        "VID-YP-PIZZA-10.mp4"
+      ]
+    },
+    "/volume1/assets/3d-assets/hdri": {
+      "description": "HDRI environment maps for 3D ad lighting.",
+      "formats": ["hdr", "exr"],
+      "examples": [
+        "ENV-STUDIO-NEUTRAL.hdr",
+        "ENV-OUTDOOR-GOLDEN-HOUR.hdr"
+      ]
+    }
+  },
+
+  "assetRegistry": {
+    "description": "Live registry of assets — add entries here when uploading to the NAS.",
+    "assets": []
+  },
+
+  "adSequencerMapping": {
+    "description": "Maps NAS asset paths to AdAsset.assetPath values expected by ad-sequencer.tool.ts.",
+    "baseNasUrl": "http://synology-nas:5000/webapi/entry.cgi",
+    "localDevFallback": "http://localhost:8080/nas-assets/3d-assets",
+    "pathPrefix": "/volume1/assets/3d-assets"
+  }
+}
