@@ -1,0 +1,105 @@
+version: "3.9"
+
+# ─── Sovereign Mainframe Stack ────────────────────────────────────────────────
+# Portable intelligence stack designed for Synology NAS deployment.
+# All services communicate over the internal 'mainframe' network.
+# Volumes persist data across container restarts.
+#
+# Start:   docker compose up -d
+# Stop:    docker compose down
+# Rebuild: docker compose up -d --build
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL — Primary Data Vault ─────────────────────────────────────────
+  db:
+    image: postgres:latest
+    container_name: mainframe_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-mainframe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB:       ${POSTGRES_DB:-sovereign}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - mainframe
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mainframe}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── API — Node 20 Alpine — Core Logic Server ─────────────────────────────────
+  api:
+    image: node:20-alpine
+    container_name: mainframe_api
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run start"
+    environment:
+      NODE_ENV:     production
+      DATABASE_URL: postgres://${POSTGRES_USER:-mainframe}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-sovereign}
+      PORT:         4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mainframe
+
+  # ── Agents — Ollama — Local LLM / AI Engine ──────────────────────────────────
+  agents:
+    image: ollama/ollama
+    container_name: mainframe_agents
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - mainframe
+    # To pull a model after first start:
+    #   docker exec mainframe_agents ollama pull llama3
+    #   docker exec mainframe_agents ollama pull mistral
+
+  # ── UI — Next.js — Intelligence Dashboard ────────────────────────────────────
+  ui:
+    image: node:20-alpine
+    container_name: mainframe_ui
+    restart: unless-stopped
+    working_dir: /app/ui
+    volumes:
+      - ./ui:/app/ui
+      - /app/ui/node_modules
+    command: sh -c "npm install && npm run build && npm run start"
+    environment:
+      NODE_ENV:           production
+      NEXT_PUBLIC_API_URL: http://api:4000
+      NEXT_PUBLIC_OLLAMA_URL: http://agents:11434
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+      - agents
+    networks:
+      - mainframe
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  db_data:
+    driver: local
+  ollama_data:
+    driver: local
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  mainframe:
+    driver: bridge
