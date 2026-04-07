@@ -96,6 +96,11 @@ export default defineSchema({
     isActive: v.boolean(),
     sortOrder: v.optional(v.number()),
     numericalWeight: v.optional(v.number()),
+    dangerLevel: v.optional(v.union(
+      v.literal("safe"),
+      v.literal("caution"),
+      v.literal("danger"),
+    )),
     metadata: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -104,7 +109,26 @@ export default defineSchema({
     .index("by_parent", ["parentId"])
     .index("by_type", ["type"])
     .index("by_parent_slug", ["parentId", "slug"])
-    .index("by_numerical_weight", ["numericalWeight"]),
+    .index("by_numerical_weight", ["numericalWeight"])
+    .index("by_danger_level", ["dangerLevel"]),
+
+  // ─── Flora Fana: Safety Protocol Layer ───────────────────────────────────
+  //
+  // One safetyProtocol per taxonomy species node.
+  // dangerLevel on the taxonomy node is the fast-lookup signal;
+  // this table holds the full risk detail and action guidance.
+
+  safetyProtocols: defineTable({
+    taxonomyId: v.id("taxonomy"),
+    humanRisk: v.string(),
+    petRisk: v.string(),
+    immediateAction: v.string(),
+    symptoms: v.optional(v.array(v.string())),
+    antidote: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_taxonomy", ["taxonomyId"]),
 
   // ─── Redesign-AI: Input Layer ─────────────────────────────────────────────
   //
