@@ -1,11 +1,57 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
   "tools": [
+    {
+      "id": "failure-recorder",
+      "name": "Wisdom Vault — Failure Recorder",
+      "path": "../toolbox/tools/wisdom-vault/failure-recorder.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Negative Knowledge Base",
+      "pillarIndex": 25,
+      "exports": [
+        "FailureRecorder",
+        "InMemoryFailureStore",
+        "createSupabaseFailureStore",
+        "computeSeverity",
+        "formatFailureRecord",
+        "formatPillarFailureSummary"
+      ],
+      "dependencies": ["telemetry-logger"],
+      "taxonomyDomains": ["SOVEREIGN-CORRECTION", "Antifragile-Wisdom"],
+      "failureCategories": ["FAILED_SEQUENCE", "REJECTED_OUTPUT", "HIGH_LATENCY_PATH"],
+      "rootCauses": ["LINGUISTIC", "LOGIC", "TOOL_MISMATCH"],
+      "severityLevels": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+      "storageAdapters": ["InMemoryFailureStore (circular buffer)", "createSupabaseFailureStore (persistent)"],
+      "supabaseTable": "failure_records",
+      "description": "Negative knowledge indexer for the Sovereign Mainframe. Records three failure categories: FAILED_SEQUENCE (toolId chain that ended in FAILED/ABANDON — records breakIndex and breakingToolId), REJECTED_OUTPUT (CRITIC rejection — records outputHash, promptHash, rejectionReason, criticConfidence), HIGH_LATENCY_PATH (observed vs budget latency, latencyOveragePercent). Root cause taxonomy: LINGUISTIC (prompt phrasing → hallucination/incoherence/format violation), LOGIC (agent reasoning → wrong plan/circular dependency), TOOL_MISMATCH (wrong tool selection → StC mismatch/API unavailable). Severity auto-computed from category+rootCause+recurrenceCount: CRITICAL (≥7 points), HIGH (≥5), MEDIUM (≥3), LOW (<3). Upsert logic: identical pattern (taskHash + category + breakingToolId/outputHash) increments recurrenceCount rather than creating a new record. negativeConstraint field: imperative constraint string auto-generated per category — 'Do NOT use sequence [X→Y→Z] — failed at Y', 'Do NOT produce output from prompt starting with [prompt prefix]', 'Do NOT invoke path [X] — exceeded latency budget by N%'. getConstraintsForTask(taskInput, pillarId) merges exact-hash matches + 7-day pillar-scoped matches, sorts by severity→recurrences. pillarSummary() returns totals per category, criticalCount, topRootCause, recurringPatterns count."
+    },
+    {
+      "id": "pre-flight-check",
+      "name": "Wisdom Vault — Pre-Flight Check",
+      "path": "../toolbox/tools/wisdom-vault/pre-flight-check.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Negative Knowledge Base",
+      "pillarIndex": 25,
+      "exports": [
+        "PreFlightCheck",
+        "formatPreFlightReport",
+        "formatNegativeKnowledgeBlock",
+        "preFlightStatusLine"
+      ],
+      "dependencies": ["failure-recorder", "sequence-analyzer"],
+      "taxonomyDomains": ["SOVEREIGN-CORRECTION", "Antifragile-Wisdom"],
+      "riskLevels": ["CLEAR", "LOW", "ELEVATED", "HIGH", "BLOCKED"],
+      "recommendations": ["PROCEED", "PROCEED_WITH_CAUTION", "RE_ARBITRATE", "ESCALATE", "BLOCK"],
+      "constraintSources": ["FAILURE_RECORDER", "SEQUENCE_ANALYZER"],
+      "description": "Pre-execution gate that queries the Negative Knowledge Base and injects failure-derived constraints into an agent's system prompt before any tool is called. Five-step pipeline: (1) hash taskInput via FNV-1a; (2) query FailureRecorder.getConstraintsForTask() — merges exact-hash + 7-day pillar-scoped failures; (3) optionally query SequenceAnalyzer for known-FAILED chains and derive LOGIC constraints; (4) merge, filter by minSeverity (default LOW), sort by severity→recurrences→source (recorder > analyzer), deduplicate by text prefix, slice to maxConstraints (default 10); (5) build NEGATIVE KNOWLEDGE block and prepend to system prompt. Injected block format: '══ NEGATIVE KNOWLEDGE ══ / [SEVERITY / ROOT_CAUSE] constraint text (Nx recurrence) / ═══'. Risk assessment: CLEAR (0 constraints), LOW (≥1), ELEVATED (hasHigh or totalRecurr≥10), HIGH (hasCritical), BLOCKED (hasCritical + totalRecurr≥5). Recommendations: PROCEED / PROCEED_WITH_CAUTION / RE_ARBITRATE / ESCALATE / BLOCK. checkOrThrow() throws if recommendation=BLOCK. checkBatch() runs multiple checks concurrently. PreFlightReport: taskHash, constraintsFound/Injected, riskLevel, recommendation, constraints[], augmentedPrompt (full system prompt + block), negativeKnowledgeBlock (block alone), checkLatencyMs."
+    },
     {
       "id": "tool-registry-weighted",
       "name": "Tactical Strategy — Weighted Tool Registry",
