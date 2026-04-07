@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "toolbox-core",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Sovereign Mainframe Toolbox — portable intelligence engines for StickThemAnywhere and allied systems.",
   "runtime": "bun >= 1.2 | node >= 20",
   "maintainer": "The Keymaker",
@@ -72,6 +72,70 @@
       ],
       "dependencies": [],
       "description": "Scores and classifies business websites as PRIMARY_TARGET, MONITOR, or PASS based on visual score, mobile responsiveness, CTA density, load speed, and trust signals."
+    },
+    {
+      "id": "yod-token-contract",
+      "name": "Sovereign Ledger — Yod Token Contract (י)",
+      "path": "../toolbox/tools/ledger/yod-token.contract.ts",
+      "version": "1.0.0",
+      "type": "contract-scaffold",
+      "pillar": "Sovereign Ledger",
+      "pillarIndex": 12,
+      "exports": [
+        "CONTRACT_SOURCE",
+        "YOD_ABI",
+        "YOD_SYMBOL",
+        "YOD_UNIT",
+        "DEFAULT_TITHE_RATE_BPS",
+        "computeTithe",
+        "formatYod",
+        "parseYod",
+        "buildTransferCalldata",
+        "decodeTransferEvent",
+        "decodeTithePaidEvent"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "KINGDOM-FINANCE",
+      "solidityVersion": "^0.8.24",
+      "tokenSymbol": "י",
+      "titheRateBps": 1000,
+      "titheRecipient": "gabResearchVault",
+      "description": "ERC-20 Yod Token (symbol: י) with a built-in 10% Tithe-Tax on every transfer, auto-routed to the GAB Research Vault address set at deployment. Includes typed ABI, pure-TS helpers (computeTithe, formatYod, parseYod, buildTransferCalldata, decodeTransferEvent, decodeTithePaidEvent), and a Move (Sui) scaffold comment block for future cross-chain porting."
+    },
+    {
+      "id": "ledger-bridge",
+      "name": "Sovereign Ledger — Ledger Bridge (NAS ↔ On-Chain)",
+      "path": "../toolbox/tools/ledger/ledger-bridge.tool.ts",
+      "version": "1.0.0",
+      "type": "engine",
+      "pillar": "Sovereign Ledger",
+      "pillarIndex": 12,
+      "exports": [
+        "LedgerBridge",
+        "computeAgentCredits",
+        "triggerAgentCredit",
+        "fetchYpAccounts",
+        "appendYpLedgerEntry",
+        "decodeTransferLog",
+        "decodeTithePaidLog",
+        "TRANSFER_TOPIC",
+        "TITHE_PAID_TOPIC"
+      ],
+      "dependencies": [],
+      "taxonomyDomain": "KINGDOM-FINANCE",
+      "linkedDomains": ["BUSINESS-AUTOMATION"],
+      "dockerService": "api",
+      "envVars": [
+        "YOD_CONTRACT_ADDRESS",
+        "YOD_RPC_URL",
+        "YOD_VAULT_ADDRESS",
+        "YP_API_URL",
+        "NAS_AGENT_URL",
+        "NAS_AGENT_SECRET",
+        "POLL_INTERVAL_MS",
+        "CATCH_UP_BLOCKS"
+      ],
+      "description": "Connects the Yellow Pages DB to on-chain Yod token Transfer and TithePaid events via EVM JSON-RPC polling (zero external dependencies — raw fetch). When a Yod deposit to a watched Yellow Pages wallet is detected, awards Agent Credits and POSTs to the Synology NAS agent endpoint. Runs as a standalone Bun process or inside the api Docker container. Handles catch-up from configurable block depth on startup."
     },
     {
       "id": "ad-sequencer",
@@ -790,6 +854,108 @@
               "/volume1/assets/3d-assets/hdri"
             ],
             "description": "Synology NAS asset store for 3D food models (GLTF/GLB), billboard textures (PNG/WebP), holographic overlays, video textures, and HDRI environment maps. Synced via GitHub Actions sync-to-nas workflow."
+          }
+        ]
+      },
+      {
+        "name": "Kingdom Finance",
+        "code": "KINGDOM-FINANCE",
+        "slug": "kingdom-finance",
+        "type": "domain",
+        "parentSlug": null,
+        "dangerLevel": "caution",
+        "pillar": "Sovereign Ledger",
+        "pillarIndex": 12,
+        "linkedTools": ["yod-token-contract", "ledger-bridge"],
+        "linkedDomains": ["BUSINESS-AUTOMATION", "COMMERCIAL-ENGINE"],
+        "description": "Twelfth pillar of the Sovereign Mainframe. On-chain Yod Token (י) with an immutable 10% Tithe-Tax auto-routing to the GAB Research Vault. The Ledger Bridge connects Yellow Pages business accounts to on-chain Yod deposits, awarding Agent Credits on the Synology NAS upon each verified deposit.",
+        "nodes": [
+          {
+            "name": "Yod Token Contract",
+            "code": "YOD-TOKEN-CONTRACT",
+            "slug": "yod-token-contract",
+            "type": "category",
+            "dangerLevel": "caution",
+            "sortOrder": 1,
+            "linkedTools": ["yod-token-contract"]
+          },
+          {
+            "name": "Token Mechanics",
+            "code": "TOKEN-MECHANICS",
+            "slug": "token-mechanics",
+            "type": "subcategory",
+            "parentSlug": "yod-token-contract",
+            "dangerLevel": "safe",
+            "sortOrder": 1,
+            "description": "ERC-20 standard with 18 decimals. Symbol: י (U+05D9). Minting is owner-only. transferOwnership supported. Move (Sui) scaffold in comment block for cross-chain porting."
+          },
+          {
+            "name": "Tithe Tax System",
+            "code": "TITHE-TAX-SYSTEM",
+            "slug": "tithe-tax-system",
+            "type": "subcategory",
+            "parentSlug": "yod-token-contract",
+            "dangerLevel": "caution",
+            "sortOrder": 2,
+            "description": "10% (1000 bps) on every transfer and transferFrom. Tithe auto-credited to gabResearchVault (immutable). Rate adjustable by owner up to 20% hard-cap. TithePaid event emitted for ledger indexing. vaultTransfer() is tithe-exempt (owner-only, vault parties only)."
+          },
+          {
+            "name": "Pure TS Helpers",
+            "code": "YOD-TS-HELPERS",
+            "slug": "yod-ts-helpers",
+            "type": "subcategory",
+            "parentSlug": "yod-token-contract",
+            "dangerLevel": "safe",
+            "sortOrder": 3,
+            "description": "computeTithe(), formatYod(), parseYod(), buildTransferCalldata(), decodeTransferEvent(), decodeTithePaidEvent() — all zero-dependency, usable on NAS without ethers.js."
+          },
+          {
+            "name": "Ledger Bridge",
+            "code": "LEDGER-BRIDGE",
+            "slug": "ledger-bridge",
+            "type": "category",
+            "dangerLevel": "caution",
+            "sortOrder": 2,
+            "linkedTools": ["ledger-bridge"]
+          },
+          {
+            "name": "On-Chain Event Polling",
+            "code": "ON-CHAIN-EVENT-POLLING",
+            "slug": "on-chain-event-polling",
+            "type": "subcategory",
+            "parentSlug": "ledger-bridge",
+            "dangerLevel": "safe",
+            "sortOrder": 1,
+            "description": "EVM JSON-RPC eth_getLogs polling (zero external deps). Catches Transfer and TithePaid events. Start-up catch-up from configurable block depth. Default poll interval 6 s (one Polygon block)."
+          },
+          {
+            "name": "Yellow Pages DB Sync",
+            "code": "YP-DB-SYNC",
+            "slug": "yp-db-sync",
+            "type": "subcategory",
+            "parentSlug": "ledger-bridge",
+            "dangerLevel": "safe",
+            "sortOrder": 2,
+            "description": "fetchYpAccounts() loads wallet→businessId map from YP API every 5 min. appendYpLedgerEntry() persists every event as a typed LedgerEntry. Balance tracking in-memory with bigint precision."
+          },
+          {
+            "name": "Agent Credits System",
+            "code": "AGENT-CREDITS-SYSTEM",
+            "slug": "agent-credits-system",
+            "type": "subcategory",
+            "parentSlug": "ledger-bridge",
+            "dangerLevel": "caution",
+            "sortOrder": 3,
+            "description": "When a Yod deposit ≥ creditThresholdBaseUnits (default 1 Yod) is detected to a watched YP wallet, computeAgentCredits() floors to whole tokens and triggerAgentCredit() POSTs to NAS_AGENT_URL with Bearer auth. AGENT_CREDIT LedgerEntry recorded."
+          },
+          {
+            "name": "GAB Research Vault",
+            "code": "GAB-RESEARCH-VAULT",
+            "slug": "gab-research-vault",
+            "type": "category",
+            "dangerLevel": "caution",
+            "sortOrder": 3,
+            "description": "Immutable on-chain address receiving 10% of every Yod transaction. Accumulates totalTithePaid (readable on-chain). Vault rebalancing via owner-only vaultTransfer() — Tithe-exempt."
           }
         ]
       }
