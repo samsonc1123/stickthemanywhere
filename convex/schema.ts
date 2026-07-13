@@ -6,6 +6,12 @@ import { authTables } from "@convex-dev/auth/server";
 export default defineSchema({
   ...authTables,
 
+  // ─── Extended users table — adds `role` field on top of authTables ────────
+  users: defineTable({
+    ...authTables.users.validator.fields,
+    role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
+  }),
+
   // ─── Legacy 3-tier flat tables (untouched) ────────────────────────────────
 
   categories: defineTable({

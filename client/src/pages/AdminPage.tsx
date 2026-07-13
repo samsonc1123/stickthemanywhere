@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { DevBypassBar } from '../components/admin/DevBypassBar';
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { api } from "../../../convex/_generated/api";
 
 type AuthStatus = 'loading' | 'unauthenticated' | 'authenticated';
 type AdminStatus = 'loading' | 'denied' | 'granted';
@@ -10,12 +11,15 @@ type AdminStatus = 'loading' | 'denied' | 'granted';
 export default function AdminPage() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const { signIn, signOut } = useAuthActions();
+  const bootstrapAdmin = useMutation(api.roles.bootstrapAdmin);
 
   const [clickCount, setClickCount] = useState(0);
   const [email, setEmail] = useState("Jhonnycomelately82@gmail.com");
   const [linkSent, setLinkSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [bootstrapResult, setBootstrapResult] = useState<string | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(false);
 
   const handleSendMagicLink = async () => {
     if (!email) return;
@@ -39,19 +43,24 @@ export default function AdminPage() {
       await signOut();
       setLinkSent(false);
       setAuthError(null);
+      setBootstrapResult(null);
     } catch (err) {
       console.error("Sign out error:", err);
     }
   };
 
   const handleBootstrap = async () => {
+    if (!isAuthenticated) return;
     setClickCount(prev => prev + 1);
+    setBootstrapping(true);
+    setBootstrapResult(null);
     try {
-      const { useMutation } = await import("convex/react");
-      const { api } = await import("../../../convex/_generated/api");
-      alert("Bootstrap requires Convex deploy. Run npx convex dev first.");
+      const result = await bootstrapAdmin({});
+      setBootstrapResult(result.status);
     } catch (err) {
-      alert("ERROR: " + (err instanceof Error ? err.message : String(err)));
+      setBootstrapResult("ERROR: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setBootstrapping(false);
     }
   };
 
@@ -107,10 +116,19 @@ export default function AdminPage() {
           <button 
             type="button"
             onClick={handleBootstrap}
-            className={`w-full py-2 rounded-full font-bold text-xs shadow-2xl transition-all ${isAuthenticated ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+            disabled={!isAuthenticated || bootstrapping}
+            className={`w-full py-2 rounded-full font-bold text-xs shadow-2xl transition-all ${isAuthenticated ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse' : 'bg-gray-800 text-gray-500 cursor-not-allowed'} disabled:opacity-60 disabled:cursor-not-allowed`}
           >
-            Bootstrap Admin Role
+            {bootstrapping ? "Bootstrapping..." : "Bootstrap Admin Role"}
           </button>
+          {bootstrapResult && (
+            <div className={`text-[10px] font-mono text-center px-1 py-1 rounded border ${bootstrapResult.startsWith("ERROR") ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-green-400 border-green-800 bg-green-900/20'}`}>
+              {bootstrapResult === "upgraded" && "✓ Admin role granted"}
+              {bootstrapResult === "already_admin" && "✓ Already admin"}
+              {bootstrapResult === "user_not_found" && "⚠ User not in DB yet"}
+              {bootstrapResult.startsWith("ERROR") && bootstrapResult}
+            </div>
+          )}
         </div>
       </div>
       <DevBypassBar />
