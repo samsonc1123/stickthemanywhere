@@ -1,1 +1,7 @@
-ai_power = "medium" -
+run = "npm run dev"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["npm", "run", "start"]
