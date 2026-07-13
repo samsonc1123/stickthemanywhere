@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { DevBypassBar } from '../components/admin/DevBypassBar';
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../convex/_generated/api";
 
@@ -217,6 +217,12 @@ function AdminDashboard() {
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
+  // Live Convex connection check — undefined = still connecting, any value = live
+  const convexPing = useQuery(api.authUtils.getIdentity);
+  const convexConnected = convexPing !== undefined;
+  const convexValue = convexConnected ? 'ON' : 'OFF';
+  const convexStatus = convexConnected ? 'success' : 'neutral';
+
   const handleTapZone = (target: string) => {
     setTapZoneFeedback(target);
     setTimeout(() => setTapZoneFeedback(null), 200);
@@ -298,7 +304,7 @@ function AdminDashboard() {
           </div>
         </div>
         <div className="flex justify-center gap-8 mt-20 mb-12">
-          <StatusIndicator label="Supabase" value="OFF" status="neutral" />
+          <StatusIndicator label="Convex" value={convexValue} status={convexStatus} />
           <StatusIndicator label="Storage" value="OFF" status="neutral" />
           <StatusIndicator label="Last Code" value={lastReservedCode} status="neutral" />
         </div>
