@@ -53,7 +53,7 @@ export const sendMagicLink = action({
 
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Email send failed (${res.status}): ${body}`);
+      throw new Error(`Resend ${res.status}: ${body}`);
     }
 
     return { sent: true };
