@@ -51,12 +51,13 @@ export const sendMagicLink = action({
       }),
     });
 
+    let emailError: string | null = null;
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Resend ${res.status}: ${body}`);
+      emailError = `Resend ${res.status}: ${body}`;
     }
 
-    return { sent: true };
+    return { sent: !emailError, magicUrl, emailError };
   },
 });
 

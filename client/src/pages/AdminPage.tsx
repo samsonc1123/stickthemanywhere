@@ -36,6 +36,7 @@ export default function AdminPage() {
   const search = useSearch();
   const [email, setEmail] = useState("Jhonnycomelately82@gmail.com");
   const [linkSent, setLinkSent] = useState(false);
+  const [magicUrl, setMagicUrl] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -71,10 +72,15 @@ export default function AdminPage() {
     setSending(true);
     setAuthError(null);
     setLinkSent(false);
+    setMagicUrl(null);
     try {
       const siteUrl = window.location.origin + "/admin";
-      await sendMagicLink({ email, siteUrl });
-      setLinkSent(true);
+      const result = await sendMagicLink({ email, siteUrl });
+      if (result.sent) {
+        setLinkSent(true);
+      } else {
+        setMagicUrl(result.magicUrl);
+      }
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -136,6 +142,19 @@ export default function AdminPage() {
               {linkSent && (
                 <div className="text-[10px] text-green-400 font-bold text-center animate-pulse">
                   Check your email for the sign-in link
+                </div>
+              )}
+              {magicUrl && (
+                <div className="space-y-1">
+                  <div className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">
+                    Email failed — tap link to sign in:
+                  </div>
+                  <a
+                    href={magicUrl}
+                    className="block w-full text-center bg-green-900/40 border border-green-500/50 text-green-400 py-2 rounded text-[10px] font-bold uppercase tracking-tighter hover:bg-green-900/60 transition-colors"
+                  >
+                    OPEN SIGN-IN LINK
+                  </a>
                 </div>
               )}
               {authError && (
