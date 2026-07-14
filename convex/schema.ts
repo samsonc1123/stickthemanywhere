@@ -1,16 +1,27 @@
-// convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-  ...authTables,
 
-  // ─── Extended users table — adds `role` field on top of authTables ────────
   users: defineTable({
-    ...authTables.users.validator.fields,
+    email: v.string(),
     role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
-  }),
+  }).index("by_email", ["email"]),
+
+  magicTokens: defineTable({
+    email: v.string(),
+    token: v.string(),
+    expiresAt: v.number(),
+    used: v.boolean(),
+  })
+    .index("by_token", ["token"])
+    .index("by_email", ["email"]),
+
+  adminSessions: defineTable({
+    email: v.string(),
+    sessionId: v.string(),
+    expiresAt: v.number(),
+  }).index("by_session_id", ["sessionId"]),
 
   // ─── Legacy 3-tier flat tables (untouched) ────────────────────────────────
 
@@ -80,14 +91,6 @@ export default defineSchema({
     .index("by_sticker", ["stickerCode"])
     .index("by_group", ["groupCode"]),
 
-  // ─── Taxonomy Engine: recursive, infinitely nestable ─────────────────────
-  //
-  // Each node can be any tier: domain → category → subcategory → group →
-  // attribute → … The `type` field is the semantic label; parentId creates
-  // the tree. Root nodes have no parentId.
-  //
-  // De-duplication key: (parentId, slug) is unique per tree level.
-
   taxonomy: defineTable({
     name: v.string(),
     slug: v.string(),
@@ -118,12 +121,6 @@ export default defineSchema({
     .index("by_numerical_weight", ["numericalWeight"])
     .index("by_danger_level", ["dangerLevel"]),
 
-  // ─── Flora Fana: Safety Protocol Layer ───────────────────────────────────
-  //
-  // One safetyProtocol per taxonomy species node.
-  // dangerLevel on the taxonomy node is the fast-lookup signal;
-  // this table holds the full risk detail and action guidance.
-
   safetyProtocols: defineTable({
     taxonomyId: v.id("taxonomy"),
     humanRisk: v.string(),
@@ -138,13 +135,7 @@ export default defineSchema({
     })),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_taxonomy", ["taxonomyId"]),
-
-  // ─── Redesign-AI: Input Layer ─────────────────────────────────────────────
-  //
-  // Each row is a business lead ingested by the Analyzer Agent.
-  // Leads with visualScore < 4 are primary redesign targets.
+  }).index("by_taxonomy", ["taxonomyId"]),
 
   redesignLeads: defineTable({
     businessName: v.string(),
@@ -172,12 +163,6 @@ export default defineSchema({
     .index("by_url", ["url"])
     .index("by_mobile_responsiveness", ["hasMobileResponsiveness"]),
 
-  // ─── Merch Designs: MAGA POD Layer ──────────────────────────────────────────
-  //
-  // Each design carries an acronym, its expanded meaning, a gematria weight,
-  // a Synology high-res path, and a product type.
-  // Linked to the taxonomy table for Spiritual Domain / General categorization.
-
   merchDesigns: defineTable({
     acronym: v.string(),
     fullMeaning: v.string(),
@@ -199,11 +184,6 @@ export default defineSchema({
     .index("by_gematria_weight", ["gematriaWeight"])
     .index("by_product_type", ["productType"])
     .index("by_taxonomy", ["taxonomyId"]),
-
-  // ─── Trinity Brand: Frequency Sync Layer ─────────────────────────────────────
-  //
-  // Products carry a frequencyHz value pulled from the GAB vault.
-  // Rooms track which devices are active and their current sync state.
 
   trinityProducts: defineTable({
     productName: v.string(),
@@ -241,7 +221,6 @@ export default defineSchema({
     .index("by_frequency", ["activeFrequencyHz"])
     .index("by_product", ["trinityProductId"]),
 
-  // Junction: one sticker can belong to many taxonomy nodes
   stickerTaxonomyLinks: defineTable({
     stickerId: v.id("stickers"),
     taxonomyId: v.id("taxonomy"),

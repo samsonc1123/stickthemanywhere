@@ -1,40 +1,51 @@
 import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
 
 export const getMyRole = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
+  args: { sessionId: v.string() },
+  handler: async (ctx, { sessionId }) => {
+    if (!sessionId) return null;
+    const session = await ctx.db
+      .query("adminSessions")
+      .withIndex("by_session_id", q => q.eq("sessionId", sessionId))
+      .first();
+    if (!session || Date.now() > session.expiresAt) return null;
 
-    const users = await ctx.db.query("users").collect();
-    const user = users.find(
-      (u) => u.email === identity.email
-    );
-
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", q => q.eq("email", session.email))
+      .first();
     return (user as any)?.role ?? null;
   },
 });
 
 export const bootstrapAdmin = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+  args: { sessionId: v.string() },
+  handler: async (ctx, { sessionId }) => {
+    if (!sessionId) throw new Error("Not authenticated");
 
-    const users = await ctx.db.query("users").collect();
-    const user = users.find(
-      (u) => u.email === identity.email
-    );
+    const session = await ctx.db
+      .query("adminSessions")
+      .withIndex("by_session_id", q => q.eq("sessionId", sessionId))
+      .first();
+    if (!session || Date.now() > session.expiresAt) throw new Error("Session expired");
+
+    const email = session.email;
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_email", q => q.eq("email", email))
+      .first();
 
     if (!user) {
-      return { status: "user_not_found", email: identity.email };
+      await ctx.db.insert("users", { email, role: "admin" });
+      return { status: "created_admin", email };
     }
 
     if ((user as any).role === "admin") {
-      return { status: "already_admin", email: identity.email };
+      return { status: "already_admin", email };
     }
 
     await ctx.db.patch(user._id, { role: "admin" } as any);
-    return { status: "upgraded", email: identity.email };
+    return { status: "upgraded", email };
   },
 });

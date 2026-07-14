@@ -1,25 +1,70 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'wouter';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import { DevBypassBar } from '../components/admin/DevBypassBar';
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
-type AuthStatus = 'loading' | 'unauthenticated' | 'authenticated';
-type AdminStatus = 'loading' | 'denied' | 'granted';
+const SESSION_KEY = "admin_session_id";
+
+function useAdminSession() {
+  const [sessionId, setSessionId] = useState<string>(() => localStorage.getItem(SESSION_KEY) || "");
+  const session = useQuery(api.magicAuth.getSession, { sessionId });
+
+  const saveSession = (id: string) => {
+    localStorage.setItem(SESSION_KEY, id);
+    setSessionId(id);
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setSessionId("");
+  };
+
+  const isAuthenticated = session !== undefined && session !== null;
+  const isLoading = session === undefined && sessionId !== "";
+
+  return { sessionId, session, isAuthenticated, isLoading, saveSession, clearSession };
+}
 
 export default function AdminPage() {
-  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const { signIn, signOut } = useAuthActions();
+  const { sessionId, session, isAuthenticated, isLoading, saveSession, clearSession } = useAdminSession();
+  const sendMagicLink = useAction(api.magicAuth.sendMagicLink);
+  const verifyToken = useAction(api.magicAuth.verifyToken);
+  const signOutMutation = useMutation(api.magicAuth.signOut);
   const bootstrapAdmin = useMutation(api.roles.bootstrapAdmin);
 
-  const [clickCount, setClickCount] = useState(0);
+  const search = useSearch();
   const [email, setEmail] = useState("Jhonnycomelately82@gmail.com");
   const [linkSent, setLinkSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [bootstrapResult, setBootstrapResult] = useState<string | null>(null);
   const [bootstrapping, setBootstrapping] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+
+  // Auto-verify token from URL on load
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const token = params.get("token");
+    if (!token || isAuthenticated) return;
+
+    setVerifying(true);
+    setAuthError(null);
+    verifyToken({ token })
+      .then((result) => {
+        if (result.success) {
+          saveSession(result.sessionId);
+          // Clean the token from URL
+          window.history.replaceState({}, "", "/admin");
+        } else {
+          setAuthError(result.error ?? "Verification failed");
+        }
+      })
+      .catch((err) => setAuthError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setVerifying(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const handleSendMagicLink = async () => {
     if (!email) return;
@@ -27,9 +72,8 @@ export default function AdminPage() {
     setAuthError(null);
     setLinkSent(false);
     try {
-      const formData = new FormData();
-      formData.set("email", email);
-      await signIn("resend", formData);
+      const siteUrl = window.location.origin + "/admin";
+      await sendMagicLink({ email, siteUrl });
       setLinkSent(true);
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : String(err));
@@ -40,22 +84,21 @@ export default function AdminPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      setLinkSent(false);
-      setAuthError(null);
-      setBootstrapResult(null);
-    } catch (err) {
-      console.error("Sign out error:", err);
-    }
+      if (sessionId) await signOutMutation({ sessionId });
+    } catch (_) {}
+    clearSession();
+    setLinkSent(false);
+    setAuthError(null);
+    setBootstrapResult(null);
   };
 
   const handleBootstrap = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !sessionId) return;
     setClickCount(prev => prev + 1);
     setBootstrapping(true);
     setBootstrapResult(null);
     try {
-      const result = await bootstrapAdmin({});
+      const result = await bootstrapAdmin({ sessionId });
       setBootstrapResult(result.status);
     } catch (err) {
       setBootstrapResult("ERROR: " + (err instanceof Error ? err.message : String(err)));
@@ -69,19 +112,21 @@ export default function AdminPage() {
       <AdminDashboard />
       <div className="fixed top-24 right-4 z-[20000] flex flex-col items-end gap-2 p-4 bg-black/90 border border-cyan-500/30 rounded shadow-2xl w-72">
         <div className="w-full space-y-3">
-          {authLoading ? (
-            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider animate-pulse">Checking auth...</div>
+          {verifying ? (
+            <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider animate-pulse">Verifying link...</div>
+          ) : isLoading ? (
+            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider animate-pulse">Checking session...</div>
           ) : !isAuthenticated ? (
             <div className="space-y-2">
               <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Magic Link Login</div>
-              <input 
+              <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Admin Email"
                 className="w-full bg-black border border-cyan-900/50 rounded px-2 py-1 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500"
               />
-              <button 
+              <button
                 onClick={handleSendMagicLink}
                 disabled={sending || !email}
                 className="w-full bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-400 border border-cyan-500/30 py-1.5 rounded text-[10px] font-bold uppercase tracking-tighter transition-colors disabled:opacity-50"
@@ -102,7 +147,7 @@ export default function AdminPage() {
           ) : (
             <div className="text-[10px] text-cyan-400 font-mono space-y-1">
               <div className="text-green-500 font-bold uppercase mb-1">Logged In</div>
-              <div className="truncate">Email: {email}</div>
+              <div className="truncate">Email: {session?.email}</div>
               <div>Clicks: {clickCount}</div>
               <button
                 onClick={handleSignOut}
@@ -112,8 +157,8 @@ export default function AdminPage() {
               </button>
             </div>
           )}
-          
-          <button 
+
+          <button
             type="button"
             onClick={handleBootstrap}
             disabled={!isAuthenticated || bootstrapping}
@@ -124,8 +169,8 @@ export default function AdminPage() {
           {bootstrapResult && (
             <div className={`text-[10px] font-mono text-center px-1 py-1 rounded border ${bootstrapResult.startsWith("ERROR") ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-green-400 border-green-800 bg-green-900/20'}`}>
               {bootstrapResult === "upgraded" && "✓ Admin role granted"}
+              {bootstrapResult === "created_admin" && "✓ Admin created"}
               {bootstrapResult === "already_admin" && "✓ Already admin"}
-              {bootstrapResult === "user_not_found" && "⚠ User not in DB yet"}
               {bootstrapResult.startsWith("ERROR") && bootstrapResult}
             </div>
           )}
@@ -156,22 +201,15 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
       height = canvas.height = window.innerHeight;
       const newColumns = Math.floor(width / fontSize);
       if (newColumns > drops.length) {
-        const extra = new Array(newColumns - drops.length).fill(1);
-        drops.push(...extra);
+        drops.push(...new Array(newColumns - drops.length).fill(1));
       }
     };
     window.addEventListener('resize', handleResize);
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
-      let textColor = '#00ff41';
-      let glow = false;
-      let opacity = 0.8;
-      if (status === 'error') {
-        textColor = '#ff3131';
-      } else if (status === 'ok') {
-        glow = true;
-      }
-      canvas.style.opacity = opacity.toString();
+      const textColor = status === 'error' ? '#ff3131' : '#00ff41';
+      const glow = status === 'ok';
+      canvas.style.opacity = '0.8';
       ctx.font = `${fontSize}px monospace`;
       for (let i = 0; i < drops.length; i++) {
         const text = characters.charAt(Math.floor(Math.random() * characters.length));
@@ -180,17 +218,15 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
           ctx.shadowBlur = 20;
           ctx.shadowColor = '#ffffff';
           ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-          ctx.fillStyle = '#00ff41';
           ctx.shadowBlur = 0;
+          ctx.fillStyle = '#00ff41';
           ctx.fillText(text, i * fontSize, drops[i] * fontSize);
         } else {
           ctx.fillStyle = textColor;
           ctx.shadowBlur = 0;
           ctx.fillText(text, i * fontSize, drops[i] * fontSize);
         }
-        if (drops[i] * fontSize > height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
+        if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
         drops[i] += 0.35;
       }
       animationId = requestAnimationFrame(draw);
@@ -212,12 +248,11 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
 }
 
 function AdminDashboard() {
-  const [lastReservedCode, setLastReservedCode] = useState<string>('--');
+  const [lastReservedCode] = useState<string>('--');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
-  // Live Convex connection check — undefined = still connecting, any value = live
   const convexPing = useQuery(api.authUtils.getIdentity);
   const convexConnected = convexPing !== undefined;
   const convexValue = convexConnected ? 'ON' : 'OFF';
@@ -233,16 +268,6 @@ function AdminDashboard() {
     }
   };
 
-  const systemHealth = 'ok';
-
-  useEffect(() => {
-    // Supabase health checks removed
-  }, []);
-
-  async function handleSyncStorage() {
-    // Storage sync logic removed
-  }
-
   const tiles = [
     { title: 'Uploader Pipeline', subtitle: 'Uploader', href: '/admin/uploader' },
     { title: 'Prefix Rules', subtitle: 'Mapper', href: '/admin/prefix-mapper' },
@@ -252,19 +277,19 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-6 flex flex-col items-center relative overflow-hidden">
-      <div 
+      <div
         onTouchStart={() => handleTapZone('/')}
         onClick={() => handleTapZone('/')}
         className={`fixed top-0 left-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/' ? 'bg-white/30' : 'bg-transparent'}`}
         style={{ pointerEvents: 'auto', WebkitTapHighlightColor: 'transparent' }}
       />
-      <div 
+      <div
         onTouchStart={() => handleTapZone('/admin/taxonomy')}
         onClick={() => handleTapZone('/admin/taxonomy')}
         className={`fixed top-0 right-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin/taxonomy' ? 'bg-white/30' : 'bg-transparent'}`}
         style={{ pointerEvents: 'auto', WebkitTapHighlightColor: 'transparent' }}
       />
-      <MatrixBackground status={systemHealth} />
+      <MatrixBackground status="ok" />
       <div className="relative z-10 flex flex-col items-center w-full pt-8">
         <div className="text-center mb-16 w-full relative">
           <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
@@ -295,7 +320,11 @@ function AdminDashboard() {
               <div className="w-full h-full bg-black border-2 border-cyan-500/50 flex items-center justify-center shadow-2xl">
                 <div style={{ transform: 'rotate(-45deg)' }} className="text-center p-1">
                   <div className="text-[9px] md:text-[10px] font-bold text-yellow-400 mb-1 leading-none uppercase tracking-tighter">Catalog</div>
-                  <button onClick={handleSyncStorage} disabled={syncStatus === 'syncing'} className="px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold bg-cyan-600 text-white hover:bg-cyan-500 transition-colors uppercase tracking-widest">
+                  <button
+                    onClick={() => setSyncStatus('syncing')}
+                    disabled={syncStatus === 'syncing'}
+                    className="px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold bg-cyan-600 text-white hover:bg-cyan-500 transition-colors uppercase tracking-widest"
+                  >
                     {syncStatus === 'syncing' ? '...' : 'Sync'}
                   </button>
                 </div>
