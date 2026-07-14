@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,27 +11,25 @@ import {
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 
-interface Sticker {
-  id: string;
-  asset_code: string;
-  name: string;
-  category_name: string;
-  category_prefix: string;
-  display_order: number | null;
-  url: string;
+interface StickerRow {
+  _id: Id<"stickers">;
+  code: string;
+  name?: string;
+  imageUrl: string | null;
+  sortOrder?: number;
 }
 
 export default function AdminReorder() {
   const [, setLocation] = useLocation();
-  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [stickers, setStickers] = useState<StickerRow[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
-  const [selectedPrefix, setSelectedPrefix] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -41,29 +39,52 @@ export default function AdminReorder() {
     setLocation(target);
   };
 
-  // Placeholder for Convex migration
-  const categories: any[] = [];
-  const categoriesLoading = false;
-  const subcategories: any[] = [];
-  const subcategoriesLoading = false;
+  const categories = useQuery(api.categories.getAllCategories) ?? [];
+  const categoriesLoading = categories === undefined;
+  const subcategories = useQuery(
+    api.subcategories.getSubcategoriesByCategory,
+    selectedCategory ? { categoryCode: selectedCategory } : "skip"
+  ) ?? [];
+  const subcategoriesLoading = subcategories === undefined;
+
+  const convexStickers = useQuery(
+    api.stickers.getStickersBySubcategory,
+    selectedSubcategory ? { subcategoryCode: selectedSubcategory } : "skip"
+  );
+
+  const updateSortOrders = useMutation(api.stickers.updateSortOrders);
 
   const handleCategoryChange = (code: string) => {
     setSelectedCategory(code);
     setSelectedSubcategory('');
-    setSelectedPrefix('');
+    setStickers([]);
+    setHasChanges(false);
+    setLoaded(false);
   };
 
   const handleSubcategoryChange = (subcatCode: string) => {
     setSelectedSubcategory(subcatCode);
-    setSelectedPrefix('');
+    setStickers([]);
+    setHasChanges(false);
+    setLoaded(false);
   };
 
-  const handleLoadStickers = async () => {
-    // Logic removed during migration
+  const handleLoadStickers = () => {
+    if (!convexStickers) return;
+    setStickers(convexStickers.map(s => ({
+      _id: s._id,
+      code: s.code,
+      name: s.name,
+      imageUrl: s.imageUrl ?? null,
+      sortOrder: s.sortOrder,
+    })));
+    setHasChanges(false);
+    setLoaded(true);
+    toast({ title: `Loaded ${convexStickers.length} stickers` });
   };
 
-  const loadStickers = async () => {
-    // Logic removed during migration
+  const loadStickers = () => {
+    handleLoadStickers();
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -95,11 +116,22 @@ export default function AdminReorder() {
   };
 
   const saveOrder = async () => {
-    // Logic removed during migration
+    setIsSaving(true);
+    try {
+      const updates = stickers.map((s, i) => ({ id: s._id, sortOrder: i + 1 }));
+      await updateSortOrders({ updates });
+      setHasChanges(false);
+      toast({ title: `✓ Saved order for ${updates.length} stickers` });
+    } catch (err) {
+      toast({ title: 'Save failed', description: String(err), variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const resetOrder = async () => {
-    // Logic removed during migration
+  const resetOrder = () => {
+    loadStickers();
+    setHasChanges(false);
   };
 
   return (
@@ -276,7 +308,7 @@ export default function AdminReorder() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {stickers.map((sticker, index) => (
               <div
-                key={sticker.id}
+                key={sticker._id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={handleDragOver}
@@ -286,8 +318,8 @@ export default function AdminReorder() {
                   relative cursor-grab active:cursor-grabbing
                   bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900
                   border-2 rounded-lg p-2 transition-all duration-200
-                  ${draggedIndex === index 
-                    ? 'border-yellow-400 shadow-lg shadow-yellow-400/50 scale-105 opacity-70' 
+                  ${draggedIndex === index
+                    ? 'border-yellow-400 shadow-lg shadow-yellow-400/50 scale-105 opacity-70'
                     : 'border-fuchsia-500/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-400/30'}
                 `}
               >
@@ -295,10 +327,10 @@ export default function AdminReorder() {
                   {index + 1}
                 </div>
                 <div className="aspect-square bg-black/50 rounded mb-2 flex items-center justify-center overflow-hidden">
-                  {sticker.url ? (
-                    <img 
-                      src={sticker.url} 
-                      alt={sticker.name || sticker.asset_code}
+                  {sticker.imageUrl ? (
+                    <img
+                      src={sticker.imageUrl}
+                      alt={sticker.name || sticker.code}
                       className="max-w-full max-h-full object-contain"
                       draggable={false}
                     />
@@ -307,7 +339,7 @@ export default function AdminReorder() {
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="text-cyan-400 text-xs font-mono truncate">{sticker.asset_code}</p>
+                  <p className="text-cyan-400 text-xs font-mono truncate">{sticker.code}</p>
                   <p className="text-gray-400 text-xs truncate">{sticker.name || '—'}</p>
                 </div>
               </div>

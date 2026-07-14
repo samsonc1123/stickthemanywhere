@@ -32,6 +32,7 @@ export default function AdminPage() {
   const verifyToken = useAction(api.magicAuth.verifyToken);
   const signOutMutation = useMutation(api.magicAuth.signOut);
   const bootstrapAdmin = useMutation(api.roles.bootstrapAdmin);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const search = useSearch();
   const [email, setEmail] = useState("Jhonnycomelately82@gmail.com");
@@ -113,88 +114,106 @@ export default function AdminPage() {
     }
   };
 
+  const showFullPanel = !isAuthenticated || panelOpen;
+
   return (
     <>
       <AdminDashboard />
-      <div className="fixed top-24 right-4 z-[20000] flex flex-col items-end gap-2 p-4 bg-black/90 border border-cyan-500/30 rounded shadow-2xl w-72">
-        <div className="w-full space-y-3">
-          {verifying ? (
-            <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider animate-pulse">Verifying link...</div>
-          ) : isLoading ? (
-            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider animate-pulse">Checking session...</div>
-          ) : !isAuthenticated ? (
-            <div className="space-y-2">
-              <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Magic Link Login</div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Admin Email"
-                className="w-full bg-black border border-cyan-900/50 rounded px-2 py-1 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500"
-              />
-              <button
-                onClick={handleSendMagicLink}
-                disabled={sending || !email}
-                className="w-full bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-400 border border-cyan-500/30 py-1.5 rounded text-[10px] font-bold uppercase tracking-tighter transition-colors disabled:opacity-50"
-              >
-                {sending ? "Sending..." : "Send Magic Link"}
-              </button>
-              {linkSent && (
-                <div className="text-[10px] text-green-400 font-bold text-center animate-pulse">
-                  Check your email for the sign-in link
-                </div>
-              )}
-              {magicUrl && (
-                <div className="space-y-1">
-                  <div className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">
-                    Email failed — tap link to sign in:
-                  </div>
-                  <a
-                    href={magicUrl}
-                    className="block w-full text-center bg-green-900/40 border border-green-500/50 text-green-400 py-2 rounded text-[10px] font-bold uppercase tracking-tighter hover:bg-green-900/60 transition-colors"
-                  >
-                    OPEN SIGN-IN LINK
-                  </a>
-                </div>
-              )}
-              {authError && (
-                <div className="text-[10px] text-red-400 font-mono break-all">
-                  {authError}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-[10px] text-cyan-400 font-mono space-y-1">
-              <div className="text-green-500 font-bold uppercase mb-1">Logged In</div>
-              <div className="truncate">Email: {session?.email}</div>
-              <div>Clicks: {clickCount}</div>
-              <button
-                onClick={handleSignOut}
-                className="mt-1 w-full bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 py-1 rounded text-[10px] font-bold uppercase tracking-tighter transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
 
-          <button
-            type="button"
-            onClick={handleBootstrap}
-            disabled={!isAuthenticated || bootstrapping}
-            className={`w-full py-2 rounded-full font-bold text-xs shadow-2xl transition-all ${isAuthenticated ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse' : 'bg-gray-800 text-gray-500 cursor-not-allowed'} disabled:opacity-60 disabled:cursor-not-allowed`}
-          >
-            {bootstrapping ? "Bootstrapping..." : "Bootstrap Admin Role"}
-          </button>
-          {bootstrapResult && (
-            <div className={`text-[10px] font-mono text-center px-1 py-1 rounded border ${bootstrapResult.startsWith("ERROR") ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-green-400 border-green-800 bg-green-900/20'}`}>
-              {bootstrapResult === "upgraded" && "✓ Admin role granted"}
-              {bootstrapResult === "created_admin" && "✓ Admin created"}
-              {bootstrapResult === "already_admin" && "✓ Already admin"}
-              {bootstrapResult.startsWith("ERROR") && bootstrapResult}
-            </div>
-          )}
+      {isAuthenticated && !panelOpen && (
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="fixed top-4 right-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 border border-green-500/40 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest text-green-400 hover:border-green-400 transition-colors"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          Admin
+        </button>
+      )}
+
+      {showFullPanel && (
+        <div className="fixed top-24 right-4 z-[20000] p-4 bg-black/90 border border-cyan-500/30 rounded shadow-2xl w-72">
+          <div className="w-full space-y-3">
+            {isAuthenticated && (
+              <button
+                onClick={() => setPanelOpen(false)}
+                className="absolute top-2 right-2 text-gray-600 hover:text-gray-400 text-xs leading-none"
+              >✕</button>
+            )}
+            {verifying ? (
+              <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider animate-pulse">Verifying link...</div>
+            ) : isLoading ? (
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider animate-pulse">Checking session...</div>
+            ) : !isAuthenticated ? (
+              <div className="space-y-2">
+                <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Magic Link Login</div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Admin Email"
+                  className="w-full bg-black border border-cyan-900/50 rounded px-2 py-1 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500"
+                />
+                <button
+                  onClick={handleSendMagicLink}
+                  disabled={sending || !email}
+                  className="w-full bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-400 border border-cyan-500/30 py-1.5 rounded text-[10px] font-bold uppercase tracking-tighter transition-colors disabled:opacity-50"
+                >
+                  {sending ? "Sending..." : "Send Magic Link"}
+                </button>
+                {linkSent && (
+                  <div className="text-[10px] text-green-400 font-bold text-center animate-pulse">
+                    Check your email for the sign-in link
+                  </div>
+                )}
+                {magicUrl && (
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">Email failed — tap link:</div>
+                    <a
+                      href={magicUrl}
+                      className="block w-full text-center bg-green-900/40 border border-green-500/50 text-green-400 py-2 rounded text-[10px] font-bold uppercase tracking-tighter hover:bg-green-900/60 transition-colors"
+                    >
+                      OPEN SIGN-IN LINK
+                    </a>
+                  </div>
+                )}
+                {authError && (
+                  <div className="text-[10px] text-red-400 font-mono break-all">{authError}</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-[10px] text-cyan-400 font-mono space-y-1">
+                <div className="text-green-500 font-bold uppercase mb-1">Logged In</div>
+                <div className="truncate">Email: {session?.email}</div>
+                <div>Clicks: {clickCount}</div>
+                <button
+                  onClick={handleSignOut}
+                  className="mt-1 w-full bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 py-1 rounded text-[10px] font-bold uppercase tracking-tighter transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleBootstrap}
+              disabled={!isAuthenticated || bootstrapping}
+              className={`w-full py-2 rounded-full font-bold text-xs shadow-2xl transition-all ${isAuthenticated ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse' : 'bg-gray-800 text-gray-500 cursor-not-allowed'} disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {bootstrapping ? "Bootstrapping..." : "Bootstrap Admin Role"}
+            </button>
+            {bootstrapResult && (
+              <div className={`text-[10px] font-mono text-center px-1 py-1 rounded border ${bootstrapResult.startsWith("ERROR") ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-green-400 border-green-800 bg-green-900/20'}`}>
+                {bootstrapResult === "upgraded" && "✓ Admin role granted"}
+                {bootstrapResult === "created_admin" && "✓ Admin created"}
+                {bootstrapResult === "already_admin" && "✓ Already admin"}
+                {bootstrapResult.startsWith("ERROR") && bootstrapResult}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
       <DevBypassBar />
     </>
   );

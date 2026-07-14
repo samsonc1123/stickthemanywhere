@@ -53,6 +53,33 @@ export const getStickerCountsByGroupCodes = query({
   },
 });
 
+export const getStickersBySubcategory = query({
+  args: { subcategoryCode: v.string() },
+  handler: async (ctx, { subcategoryCode }) => {
+    const stickers = await ctx.db
+      .query("stickers")
+      .withIndex("by_subcategory", q => q.eq("subcategoryCode", subcategoryCode.toUpperCase()))
+      .collect();
+
+    const results = [];
+    for (const s of stickers) {
+      const imageUrl = s.storageId ? await ctx.storage.getUrl(s.storageId) : null;
+      results.push({ ...s, imageUrl });
+    }
+    return results.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  },
+});
+
+export const updateSortOrders = mutation({
+  args: { updates: v.array(v.object({ id: v.id("stickers"), sortOrder: v.number() })) },
+  handler: async (ctx, { updates }) => {
+    for (const { id, sortOrder } of updates) {
+      await ctx.db.patch(id, { sortOrder, updatedAt: Date.now() });
+    }
+    return { updated: updates.length };
+  },
+});
+
 export const listAllStickers = query({
   args: {},
   handler: async (ctx) => {
