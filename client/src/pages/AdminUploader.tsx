@@ -13,6 +13,7 @@ import {
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import { DatabaseZap } from 'lucide-react';
 
 interface UploadResult {
   assetCode: string;
@@ -38,6 +39,10 @@ export default function AdminUploader() {
   ) ?? [];
   const recentStickerData = useQuery(api.stickers.listAllStickers) ?? [];
 
+  const [isSeeding, setIsSeeding] = useState(false);
+  const taxonomyStats = useQuery(api.seedTaxonomy.getTaxonomyStats);
+  const seedTaxonomy = useMutation(api.seedTaxonomy.seedTaxonomy);
+
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
   const finalizeStickerUpload = useMutation(api.stickers.finalizeStickerUpload);
   const sendUploadConfirmation = useAction(api.email.sendUploadConfirmation);
@@ -49,6 +54,18 @@ export default function AdminUploader() {
       window.history.back();
     } else {
       setLocation(target);
+    }
+  };
+
+  const handleSeedTaxonomy = async () => {
+    setIsSeeding(true);
+    try {
+      const result = await seedTaxonomy({});
+      toast({ title: '✓ Taxonomy Seeded', description: result.message });
+    } catch (err: any) {
+      toast({ title: 'Seed Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -205,6 +222,35 @@ export default function AdminUploader() {
               50% { background-position: 100% 50%; }
             }
           `}</style>
+
+          {/* Taxonomy status + seed button */}
+          <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-[11px] font-mono text-gray-500 uppercase tracking-widest">
+              {taxonomyStats
+                ? `${taxonomyStats.categoryCount} categories · ${taxonomyStats.subcategoryCount} subcategories`
+                : 'Checking taxonomy…'}
+            </span>
+            {(taxonomyStats?.categoryCount === 0) && (
+              <button
+                onClick={handleSeedTaxonomy}
+                disabled={isSeeding}
+                className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/20 border border-yellow-400/50 rounded text-yellow-400 text-[10px] font-bold uppercase tracking-wider hover:bg-yellow-500/30 transition-colors disabled:opacity-50"
+              >
+                <DatabaseZap size={12} />
+                {isSeeding ? 'Seeding…' : 'Seed Taxonomy'}
+              </button>
+            )}
+            {taxonomyStats && taxonomyStats.categoryCount > 0 && (
+              <button
+                onClick={handleSeedTaxonomy}
+                disabled={isSeeding}
+                className="flex items-center gap-1.5 px-3 py-1 bg-gray-800/60 border border-gray-600/40 rounded text-gray-500 text-[10px] font-mono uppercase tracking-wider hover:text-gray-400 hover:border-gray-500 transition-colors disabled:opacity-50"
+              >
+                <DatabaseZap size={11} />
+                {isSeeding ? 'Syncing…' : 'Re-seed'}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-black/40 border-2 border-cyan-400 rounded-lg p-6">

@@ -23,6 +23,7 @@ import type * as merch from "../merch.js";
 import type * as redesign from "../redesign.js";
 import type * as roles from "../roles.js";
 import type * as seed from "../seed.js";
+import type * as seedTaxonomy from "../seedTaxonomy.js";
 import type * as stickers from "../stickers.js";
 import type * as subcategories from "../subcategories.js";
 import type * as taxonomy from "../taxonomy.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   redesign: typeof redesign;
   roles: typeof roles;
   seed: typeof seed;
+  seedTaxonomy: typeof seedTaxonomy;
   stickers: typeof stickers;
   subcategories: typeof subcategories;
   taxonomy: typeof taxonomy;
