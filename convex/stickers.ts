@@ -131,20 +131,26 @@ export const finalizeStickerUpload = mutation({
     }
 
     // 3 — Generate sequential code
+    // Use by_subcategory index — O(k) not O(n), collision-safe by construction
     const prefix = subcat.code;
 
-    const allStickers = await ctx.db.query("stickers").collect();
+    const subcatStickers = await ctx.db
+      .query("stickers")
+      .withIndex("by_subcategory", (q) => q.eq("subcategoryCode", subcategoryCode))
+      .collect();
 
-    const matchingNums = allStickers
-      .filter((s) => typeof s.code === "string" && s.code.startsWith(prefix))
-      .map((s) => {
-        const num = parseInt(s.code.slice(prefix.length), 10);
-        return Number.isFinite(num) ? num : 0;
-      });
+    const maxNum = subcatStickers.reduce((max, s) => {
+      // Code format: PREFIX-NNNNN (e.g. FLO-ROS-00042)
+      // Strip "PREFIX-" to isolate the numeric suffix
+      const suffix = s.code.startsWith(prefix + "-")
+        ? s.code.slice(prefix.length + 1)
+        : s.code.slice(prefix.length);
+      const num = parseInt(suffix, 10);
+      return Number.isFinite(num) && num > max ? num : max;
+    }, 0);
 
-    const nextNum = matchingNums.length ? Math.max(...matchingNums) + 1 : 1;
-
-    const code = `${prefix}${String(nextNum).padStart(5, "0")}`;
+    const nextNum = maxNum + 1;
+    const code = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
     // 4 — Final uniqueness check
     const dupe = await ctx.db
