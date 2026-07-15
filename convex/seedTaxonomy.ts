@@ -249,64 +249,46 @@ const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrd
   { categoryCode: "UNICORNS", code: "UNI", name: "Unicorns", sortOrder: 1 },
 ];
 
-export const seedTaxonomy = mutation({
+export const ensureTaxonomySeeded = mutation({
   handler: async (ctx) => {
+    const firstCat = await ctx.db.query("categories").first();
+    if (firstCat) {
+      return { seeded: false, message: "Already seeded" };
+    }
+
     const now = Date.now();
     let catsAdded = 0;
     let subsAdded = 0;
-    let catsSkipped = 0;
-    let subsSkipped = 0;
 
     for (const cat of CATEGORIES) {
-      const existing = await ctx.db
-        .query("categories")
-        .withIndex("by_code", (q) => q.eq("code", cat.code))
-        .unique();
-
-      if (!existing) {
-        await ctx.db.insert("categories", {
-          code: cat.code,
-          name: cat.name,
-          icon: cat.icon,
-          isActive: true,
-          sortOrder: cat.sortOrder,
-          createdAt: now,
-          updatedAt: now,
-        });
-        catsAdded++;
-      } else {
-        catsSkipped++;
-      }
+      await ctx.db.insert("categories", {
+        code: cat.code,
+        name: cat.name,
+        icon: cat.icon,
+        isActive: true,
+        sortOrder: cat.sortOrder,
+        createdAt: now,
+        updatedAt: now,
+      });
+      catsAdded++;
     }
 
     for (const sub of SUBCATEGORIES) {
-      const existing = await ctx.db
-        .query("subcategories")
-        .withIndex("by_code", (q) => q.eq("code", sub.code))
-        .unique();
-
-      if (!existing) {
-        await ctx.db.insert("subcategories", {
-          categoryCode: sub.categoryCode,
-          code: sub.code,
-          name: sub.name,
-          isActive: true,
-          sortOrder: sub.sortOrder,
-          createdAt: now,
-          updatedAt: now,
-        });
-        subsAdded++;
-      } else {
-        subsSkipped++;
-      }
+      await ctx.db.insert("subcategories", {
+        categoryCode: sub.categoryCode,
+        code: sub.code,
+        name: sub.name,
+        isActive: true,
+        sortOrder: sub.sortOrder,
+        createdAt: now,
+        updatedAt: now,
+      });
+      subsAdded++;
     }
 
     return {
-      catsAdded,
-      catsSkipped,
-      subsAdded,
-      subsSkipped,
-      message: `Added ${catsAdded} categories (${catsSkipped} already existed) and ${subsAdded} subcategories (${subsSkipped} already existed)`,
+      seeded: true,
+      message: `Initialized ${catsAdded} categories and ${subsAdded} subcategories`,
     };
   },
 });
