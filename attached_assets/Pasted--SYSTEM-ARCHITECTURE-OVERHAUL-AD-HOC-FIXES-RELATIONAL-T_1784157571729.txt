@@ -1,0 +1,59 @@
+### SYSTEM ARCHITECTURE OVERHAUL: AD-HOC FIXES & RELATIONAL TAXONOMY SCHEMA UPDATE
+
+Roger, we need a clean, automated refactor across our frontend routing, Convex schema, and database layout. The system consists of an admin suite for "Stick Them Anywhere". Currently, three views exist: 
+1. `/admin/prefix-mapper` (Failing with a regex/JSON pattern error)
+2. `/admin/uploader` (Rendering properly, but lacks category integration)
+3. `/admin/reorder` (Completely broken; App artifact runtime error)
+
+We also need to fix a structural flaw in how we handle our categories and subcategories to support an infinite number of stickers without subcategory namespace collision.
+
+---
+
+### Task 1: Fix `/admin/prefix-mapper` Runtime Crash
+* **Symptom:** Safari/Webkit throws: `"Error: The string did not match the expected pattern."`
+* **Root Cause:** A regular expression pattern validation failure (likely inside a `URLPattern` API call, a malformed `RegExp` initialization, or parsing an invalid JSON/text payload as a strict regex shape).
+* **Action Required:** Locate the routing or mapping logic on `/admin/prefix-mapper`. Wrap any `URLPattern` or dynamic regex-building initialization in a `try/catch` safety fallback, and ensure the fallback handles non-matching patterns cleanly without crashing the component.
+
+---
+
+### Task 2: Fix `/admin/reorder` Complete Crash
+* **Symptom:** "Your Start application artifact encountered an error" on `/admin/reorder`.
+* **Root Cause:** Broken dynamic import, a missing export, or a component crashing on mount due to missing query results from Convex.
+* **Action Required:** Diagnose the component export at `/admin/reorder` (or `/pages/admin/reorder` / `/app/admin/reorder`). Ensure it has a valid default export and handles `undefined` or loading states from Convex queries gracefully (e.g., returning a loading spinner instead of crashing before data arrives).
+
+---
+
+### Task 3: Refactor Taxonomy Schema & Mutations (Infinite Scale)
+Our current taxonomy structure is flat or inverted. We need a robust, scalable **Tertiary Taxonomy System** that allows us to scale stickers infinitely without subcategories getting orphaned or overlapping.
+
+#### 1. Update the Convex Schema (`convex/schema.ts`)
+Define a clear, relational hierarchy where Subcategories explicitly belong to Categories, and Stickers explicitly reference their Subcategory.
+
+```typescript
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  // 1. Root Categories (e.g., Animals, Flowers, Gaming)
+  categories: defineTable({
+    name: v.string(),            // Unique display name
+    slug: v.string(),            // For clean URL routing
+  }).index("by_slug", ["slug"]),
+
+  // 2. Subcategories (Explicitly linked to a parent Category)
+  subcategories: defineTable({
+    categoryId: v.id("categories"), // The parent relational link
+    name: v.string(),               // e.g., "Dogs" under "Animals"
+    prefix: v.string(),             // Code prefix used for generating sequential sticker codes
+  })
+  .index("by_category", ["categoryId"])
+  .index("by_prefix", ["prefix"]),
+
+  // 3. Stickers (Scale infinitely by pointing directly to their Subcategory)
+  stickers: defineTable({
+    subcategoryId: v.id("subcategories"), 
+    imageUrl: v.string(),
+    stickerCode: v.string(), // e.g., "DOG-001" generated sequentially based on subcategory prefix
+    createdAt: v.number(),
+  }).index("by_subcategory", ["subcategoryId"]),
+});

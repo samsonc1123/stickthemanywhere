@@ -1,37 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
 import { useLocation } from "wouter";
-
-interface PrefixRule {
-  prefix: string;
-  category_name: string;
-  category_code: string;
-  subcategory_code: string;
-}
-
-interface Category {
-  code: string;
-  name: string;
-}
-
-interface Subcategory {
-  code: string;
-  name: string;
-}
-
-interface MissingPrefixData {
-  success: boolean;
-  categoryCode: string;
-  totalSubcategories: number;
-  coveredCount: number;
-  missingPrefixes: Subcategory[];
-}
+import { api } from "../../../convex/_generated/api";
 
 export default function AdminPrefixMapper() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
-  const [prefixInput, setPrefixInput] = useState<string>("");
-  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
@@ -41,262 +15,137 @@ export default function AdminPrefixMapper() {
     setLocation(target);
   };
 
-  const { data: rulesData, isLoading: rulesLoading, error: rulesError, refetch: refetchRules } = useQuery<{ success: boolean; rules: PrefixRule[] }>({
-    queryKey: ['/api/admin/prefix-rules'],
+  const allPrefixes = useQuery(api.uploads.listAllPrefixes) ?? [];
+  const categories = useQuery(api.categories.getAllCategories) ?? [];
+
+  const filtered = allPrefixes.filter((p) => {
+    const matchCat = !filterCategory || p.categoryCode === filterCategory;
+    const q = search.toUpperCase();
+    const matchSearch =
+      !q ||
+      p.prefix.includes(q) ||
+      p.subcategoryName.toUpperCase().includes(q) ||
+      p.categoryName.toUpperCase().includes(q);
+    return matchCat && matchSearch;
   });
 
-  const { data: categoriesData } = useQuery<{ success: boolean; categories: Category[] }>({
-    queryKey: ['/api/admin/diagnostics/categories-list'],
-  });
-
-  const { data: subcategoriesData } = useQuery<{ success: boolean; subcategories: Subcategory[] }>({
-    queryKey: ['/api/admin/diagnostics/subcategories', selectedCategory],
-    queryFn: async () => {
-      if (!selectedCategory) return { success: true, subcategories: [] };
-      // ROGER NON-NEGOTIABLE: Subcategories MUST be fetched by category_code
-      const response = await fetch(`/api/admin/diagnostics/subcategories/${selectedCategory}`);
-      return response.json();
-    },
-    enabled: !!selectedCategory,
-  });
-
-  const { data: missingPrefixData, refetch: refetchMissing } = useQuery<MissingPrefixData>({
-    queryKey: ['/api/admin/missing-prefixes', selectedCategory],
-    queryFn: async () => {
-      if (!selectedCategory) return { success: true, categoryCode: '', totalSubcategories: 0, coveredCount: 0, missingPrefixes: [] };
-      const response = await fetch(`/api/admin/missing-prefixes/${selectedCategory}`);
-      return response.json();
-    },
-    enabled: !!selectedCategory,
-  });
-
-  const createRuleMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/admin/prefix-rules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category_code: selectedCategory,
-          subcategory_code: selectedSubcategory,
-          prefix: prefixInput.toUpperCase(),
-        }),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create rule');
-      }
-      return response.json();
-    },
-    onSuccess: async (data) => {
-      console.log('✅ Rule created:', data);
-      // Refetch rules and missing prefixes BEFORE clearing selection
-      await refetchRules();
-      await refetchMissing();
-      
-      setSubmitMessage({ type: 'success', text: '✅ Prefix rule created!' });
-      setPrefixInput('');
-      setSelectedSubcategory('');
-      setSelectedCategory('');
-      setTimeout(() => setSubmitMessage(null), 3000);
-    },
-    onError: (error: any) => {
-      console.error('❌ Rule creation failed:', error);
-      setSubmitMessage({ type: 'error', text: `❌ ${error.message}` });
-      setTimeout(() => setSubmitMessage(null), 5000);
-    },
-  });
-
-  const rules = rulesData?.rules || [];
-  const categories = categoriesData?.categories || [];
-  const subcategories = subcategoriesData?.subcategories || [];
-  const missingPrefixes = missingPrefixData?.missingPrefixes || [];
-  const totalSubcategories = missingPrefixData?.totalSubcategories || 0;
-  const coveredCount = missingPrefixData?.coveredCount || 0;
-
-  const canSubmit = selectedCategory && selectedSubcategory && prefixInput.trim().length > 0;
+  const grouped: Record<string, typeof filtered> = {};
+  for (const p of filtered) {
+    if (!grouped[p.categoryCode]) grouped[p.categoryCode] = [];
+    grouped[p.categoryCode].push(p);
+  }
 
   return (
-    <div className="min-h-screen bg-perforated text-white flex flex-col items-center p-4 pt-8 relative">
-      {/* Invisible Tap Zones - Large 150x150 for reliability */}
-      <div 
-        onTouchStart={() => handleTapZone('/admin')}
-        onClick={() => handleTapZone('/admin')}
-        className={`fixed top-0 left-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin' ? 'bg-white/30' : 'bg-transparent'}`}
+    <div className="min-h-screen bg-perforated text-white font-orbitron p-4 relative">
+      <div
+        onTouchStart={() => handleTapZone("/admin")}
+        onClick={() => handleTapZone("/admin")}
+        className={`fixed top-0 left-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === "/admin" ? "bg-white/30" : "bg-transparent"}`}
         title="Admin Dugout"
-        style={{ pointerEvents: 'auto', WebkitTapHighlightColor: 'transparent' }}
+        style={{ pointerEvents: "auto", WebkitTapHighlightColor: "transparent" }}
       />
-      <div 
-        onTouchStart={() => handleTapZone('/admin/diagnostics')}
-        onClick={() => handleTapZone('/admin/diagnostics')}
-        className={`fixed top-0 right-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin/diagnostics' ? 'bg-white/30' : 'bg-transparent'}`}
-        title="System Diagnostics"
-        style={{ pointerEvents: 'auto', WebkitTapHighlightColor: 'transparent' }}
+      <div
+        onTouchStart={() => handleTapZone("/admin/uploader")}
+        onClick={() => handleTapZone("/admin/uploader")}
+        className={`fixed top-0 right-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === "/admin/uploader" ? "bg-white/30" : "bg-transparent"}`}
+        title="Uploader"
+        style={{ pointerEvents: "auto", WebkitTapHighlightColor: "transparent" }}
       />
 
-      <h1 className="text-3xl font-cursive font-bold mb-6">
-        <span className="glow-yellow">Prefix Rules Mapper</span>
-      </h1>
-
-      {rulesLoading ? (
-        <div className="text-yellow-400 animate-pulse">Loading prefix rules...</div>
-      ) : rulesError ? (
-        <div className="text-red-500 bg-red-900/30 px-4 py-2 rounded">
-          Error: {(rulesError as Error).message}
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-6 pt-4">
+          <h1
+            className="text-3xl md:text-4xl font-orbitron font-bold tracking-wider uppercase"
+            style={{
+              background: "linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff)",
+              backgroundSize: "300% 300%",
+              animation: "gradient-shift 4s ease infinite",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Prefix Rules
+          </h1>
+          <style>{`@keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }`}</style>
+          <p className="text-[11px] font-mono text-gray-500 uppercase tracking-widest mt-2">
+            {allPrefixes.length} prefix codes · {categories.length} categories
+          </p>
         </div>
-      ) : (
-        <div className="w-full max-w-4xl space-y-6">
-          {submitMessage && (
-            <div className={`px-4 py-2 rounded text-center font-bold ${submitMessage.type === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-              {submitMessage.text}
-            </div>
-          )}
 
-          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-            <h2 className="text-lg font-bold text-cyan-400 mb-4">Create New Prefix Rule</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Category:</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setSelectedSubcategory('');
-                  }}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  data-testid="select-category-form"
+        <div className="flex gap-3 mb-6 flex-wrap">
+          <input
+            type="text"
+            placeholder="Search prefix or name…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 min-w-[160px] bg-black border border-cyan-900/50 rounded px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 placeholder-gray-600"
+          />
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="bg-black border border-fuchsia-900/50 rounded px-3 py-2 text-xs text-fuchsia-300 font-mono focus:outline-none focus:border-fuchsia-500"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {allPrefixes.length === 0 && (
+          <div className="text-center py-16 space-y-3">
+            <p className="text-yellow-400 font-bold uppercase tracking-wider text-sm">No prefix rules found</p>
+            <p className="text-gray-500 text-xs font-mono">
+              Seed the taxonomy in the Uploader first to populate prefixes.
+            </p>
+            <button
+              onClick={() => setLocation("/admin/uploader")}
+              className="mt-2 px-4 py-2 bg-cyan-900/40 border border-cyan-500/40 rounded text-cyan-400 text-xs font-bold uppercase tracking-wider hover:bg-cyan-900/60 transition-colors"
+            >
+              Go to Uploader → Seed Taxonomy
+            </button>
+          </div>
+        )}
+
+        {Object.entries(grouped).map(([catCode, rows]) => (
+          <div key={catCode} className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-bold font-mono uppercase tracking-widest text-fuchsia-400 bg-fuchsia-900/20 border border-fuchsia-700/40 px-2 py-0.5 rounded">
+                {catCode}
+              </span>
+              <span className="text-[11px] text-gray-400 font-mono">{rows[0].categoryName}</span>
+              <span className="text-[10px] text-gray-600 font-mono ml-auto">{rows.length} prefixes</span>
+            </div>
+
+            <div className="grid gap-1.5">
+              {rows.map((row) => (
+                <div
+                  key={row.prefix}
+                  className="flex items-center gap-3 bg-black/40 border border-gray-800 rounded px-3 py-2 hover:border-cyan-800 transition-colors"
                 >
-                  <option value="">-- Select Category --</option>
-                  {categories
-                    .filter(cat => cat.code !== 'ANI')
-                    .map(cat => (
-                      <option key={cat.code} value={cat.code}>{cat.name}</option>
-                    ))}
-                </select>
-              </div>
-
-              {selectedCategory && (
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Subcategory:</label>
-                  <select
-                    value={selectedSubcategory}
-                    onChange={(e) => setSelectedSubcategory(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                    data-testid="select-subcategory-form"
-                  >
-                    <option value="">-- Select Subcategory --</option>
-                    {subcategories.map(sub => (
-                      <option key={sub.code} value={sub.code}>{sub.name}</option>
-                    ))}
-                  </select>
+                  <span className="font-mono text-xs font-bold text-cyan-400 w-36 shrink-0 tabular-nums">
+                    {row.prefix}
+                  </span>
+                  <span className="text-gray-700 text-xs shrink-0">→</span>
+                  <span className="text-gray-300 text-xs flex-1 truncate">{row.subcategoryName}</span>
+                  <span className="text-gray-600 text-[10px] font-mono shrink-0 hidden sm:block">
+                    e.g. {row.prefix}00001
+                  </span>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Prefix (e.g., SHL, AVT):</label>
-                <input
-                  type="text"
-                  value={prefixInput}
-                  onChange={(e) => setPrefixInput(e.target.value.toUpperCase())}
-                  placeholder="Enter prefix code"
-                  maxLength={10}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white font-mono"
-                  data-testid="input-prefix"
-                />
-              </div>
-
-              <button
-                onClick={() => createRuleMutation.mutate()}
-                disabled={!canSubmit || createRuleMutation.isPending}
-                className={`w-full py-2 rounded font-bold transition-all ${
-                  canSubmit && !createRuleMutation.isPending
-                    ? 'bg-green-700 hover:bg-green-600 text-white cursor-pointer'
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
-                data-testid="button-save-rule"
-              >
-                {createRuleMutation.isPending ? 'Creating...' : 'Save Prefix Rule'}
-              </button>
+              ))}
             </div>
           </div>
+        ))}
 
-          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-            <h2 className="text-lg font-bold text-cyan-400 mb-3">All Prefix Rules ({rules.length} total)</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-600">
-                    <th className="text-left py-2 px-3 text-yellow-400">Category Code</th>
-                    <th className="text-left py-2 px-3 text-yellow-400">Category Name</th>
-                    <th className="text-left py-2 px-3 text-yellow-400">Subcategory Code</th>
-                    <th className="text-left py-2 px-3 text-yellow-400">Prefix</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rules.map((rule, i) => (
-                    <tr key={i} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                      <td className="py-2 px-3 font-mono text-cyan-300">{rule.category_code}</td>
-                      <td className="py-2 px-3">{rule.category_name}</td>
-                      <td className="py-2 px-3 font-mono text-pink-300">{rule.subcategory_code}</td>
-                      <td className="py-2 px-3 font-mono font-bold text-green-400">{rule.prefix}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-            <h2 className="text-lg font-bold text-cyan-400 mb-3">Check Missing Prefixes</h2>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">Select Category:</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full max-w-md bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                data-testid="select-category"
-              >
-                <option value="">-- Select a category --</option>
-                {categories
-                  .filter(cat => cat.code !== 'ANI')
-                  .map(cat => (
-                    <option key={cat.code} value={cat.code}>{cat.name}</option>
-                  ))}
-              </select>
-            </div>
-
-            {selectedCategory && totalSubcategories === 0 && (
-              <div className="text-gray-500">No subcategories found for this category.</div>
-            )}
-
-            {selectedCategory && totalSubcategories > 0 && missingPrefixes.length === 0 && (
-              <div className="text-green-400 font-bold text-center py-4">
-                ✅ All subcategories in this category have prefix rules
-              </div>
-            )}
-
-            {selectedCategory && missingPrefixes.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm text-gray-400">
-                  Missing Prefix Rules ({missingPrefixes.length} of {totalSubcategories}):
-                </h3>
-                <div className="grid gap-2">
-                  {missingPrefixes.map(sub => (
-                    <div 
-                      key={sub.code} 
-                      className="flex items-center justify-between px-3 py-2 rounded bg-red-900/30 border border-red-700"
-                    >
-                      <div className="space-x-2">
-                        <span className="text-gray-300">{sub.name}</span>
-                      </div>
-                      <span className="text-red-400 font-bold text-sm">Missing Prefix Rule</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        {filtered.length === 0 && allPrefixes.length > 0 && (
+          <p className="text-center text-gray-600 text-xs font-mono py-8">
+            No prefixes match your filter.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

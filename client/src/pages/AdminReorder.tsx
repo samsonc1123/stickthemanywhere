@@ -54,6 +54,8 @@ export default function AdminReorder() {
 
   const updateSortOrders = useMutation(api.stickers.updateSortOrders);
 
+  const isLoading = convexStickers === undefined && !!selectedSubcategory;
+
   const handleCategoryChange = (code: string) => {
     setSelectedCategory(code);
     setSelectedSubcategory('');
