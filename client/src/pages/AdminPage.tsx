@@ -129,13 +129,14 @@ export default function AdminPage() {
       {!panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}
-          className={`fixed bottom-4 right-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest transition-colors ${
+          className={`fixed bottom-14 right-4 z-[20000] flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest transition-all ${
             isAuthenticated
-              ? "border border-green-500/40 text-green-400 hover:border-green-400"
-              : "border border-gray-600/40 text-gray-500 hover:border-gray-400"
+              ? "bg-black/90 border-2 border-green-400 text-green-400"
+              : "bg-black/80 border border-gray-600/40 text-gray-500"
           }`}
+          style={isAuthenticated ? { boxShadow: "0 0 8px #4ade80, 0 0 16px #4ade8055" } : {}}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${isAuthenticated ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
+          <span className={`w-2 h-2 rounded-full ${isAuthenticated ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
           Admin
         </button>
       )}
