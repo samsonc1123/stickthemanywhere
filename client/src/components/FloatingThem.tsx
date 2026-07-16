@@ -63,59 +63,48 @@ interface Props {
   titleRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
-// CRITICAL: inline style.transform overrides @keyframes (inline > animation in CSS cascade).
-// We must NOT set transform in the style object while peeling — the animation owns it entirely.
-//
-// Phase timeline (each phase is deliberately large so it reads clearly on screen):
-//  P1  0–18%   T edge rolls right toward HEM  — big rightward arc + spin
+// Peel sequence (8 phases, big movements so each direction reads clearly):
+//  P1  0–18%   T edge — tilts from T corner, rolls hard right toward HEM
 //  P2 18–32%   HEM pops way up, drops heavy, sticks
-//  P3 32–52%   Left→right sweep across screen + roll, sticks
+//  P3 32–52%   Sweeps left-to-right across all four edges, rolls, sticks
 //  P4 52–62%   Sharp pop straight up, drops, sticks
-//  P5 62–78%   MEHT reverse — M side peels, whole word rolls hard back left toward T
+//  P5 62–78%   MEHT reverse — M side peels, rolls back left toward T
 //  P6 78–87%   Pop up, drops, sticks
-//  P7 87–98%   Diagonal rip — top corner tears to kitty-corner of M (across and down)
-//  P8 98–100%  Breaks free — spins and launches straight up off-screen
+//  P7 87–98%   Diagonal rip — top corner tears to kitty-corner of M
+//  P8 98–100%  Breaks free — full spin, launches straight up
 const PEEL_CSS = `
 @keyframes complexPeel {
-  0%   { transform: rotate(12deg)   translate(0px,   0px);   }
+  0%   { transform: rotate(12deg)   translate(0px,    0px);   }
 
-  /* P1: T-edge curls — rolls rightward toward HEM */
-  6%   { transform: rotate(35deg)   translate(60px,  -40px); }
-  12%  { transform: rotate(70deg)   translate(130px, -60px); }
-  18%  { transform: rotate(15deg)   translate(10px,  -4px);  }
+  6%   { transform: rotate(35deg)   translate(60px,  -40px);  }
+  12%  { transform: rotate(70deg)   translate(130px, -60px);  }
+  18%  { transform: rotate(15deg)   translate(10px,  -4px);   }
 
-  /* P2: HEM pops way up, falls heavy, sticks */
-  22%  { transform: rotate(5deg)    translate(4px,  -110px); }
-  28%  { transform: rotate(30deg)   translate(20px,   50px); }
-  32%  { transform: rotate(12deg)   translate(2px,    2px);  }
+  22%  { transform: rotate(5deg)    translate(4px,  -110px);  }
+  28%  { transform: rotate(30deg)   translate(20px,   50px);  }
+  32%  { transform: rotate(12deg)   translate(2px,    2px);   }
 
-  /* P3: Full left→right sweep, rolls across, sticks */
-  38%  { transform: rotate(-30deg)  translate(-140px, -20px);}
-  46%  { transform: rotate(50deg)   translate(160px,  -30px);}
-  52%  { transform: rotate(12deg)   translate(4px,    0px);  }
+  38%  { transform: rotate(-30deg)  translate(-140px,-20px);  }
+  46%  { transform: rotate(50deg)   translate(160px, -30px);  }
+  52%  { transform: rotate(12deg)   translate(4px,    0px);   }
 
-  /* P4: Sharp pop up, lands, sticks */
-  56%  { transform: rotate(0deg)    translate(0px,  -120px); }
-  60%  { transform: rotate(20deg)   translate(10px,   14px); }
-  62%  { transform: rotate(12deg)   translate(2px,    0px);  }
+  56%  { transform: rotate(0deg)    translate(0px,  -120px);  }
+  60%  { transform: rotate(20deg)   translate(10px,   14px);  }
+  62%  { transform: rotate(12deg)   translate(2px,    0px);   }
 
-  /* P5: MEHT reverse — M side peels, rolls hard back toward T */
-  67%  { transform: rotate(55deg)   translate(120px, -50px); }
-  75%  { transform: rotate(-45deg)  translate(-150px,-40px); }
-  78%  { transform: rotate(8deg)    translate(-3px,   0px);  }
+  67%  { transform: rotate(55deg)   translate(120px, -50px);  }
+  75%  { transform: rotate(-45deg)  translate(-150px,-40px);  }
+  78%  { transform: rotate(8deg)    translate(-3px,   0px);   }
 
-  /* P6: Pop, drops heavy, sticks */
-  82%  { transform: rotate(0deg)    translate(0px,  -100px); }
-  86%  { transform: rotate(14deg)   translate(6px,    8px);  }
-  87%  { transform: rotate(12deg)   translate(1px,    0px);  }
+  82%  { transform: rotate(0deg)    translate(0px,  -100px);  }
+  86%  { transform: rotate(14deg)   translate(6px,    8px);   }
+  87%  { transform: rotate(12deg)   translate(1px,    0px);   }
 
-  /* P7: Diagonal — tears from top corner to kitty-corner of M */
-  91%  { transform: rotate(-60deg)  translate(-80px, -90px); }
-  96%  { transform: rotate(-130deg) translate(90px,  120px); }
-  98%  { transform: rotate(-70deg)  translate(14px,   8px);  }
+  91%  { transform: rotate(-60deg)  translate(-80px, -90px);  }
+  96%  { transform: rotate(-130deg) translate(90px,  120px);  }
+  98%  { transform: rotate(-70deg)  translate(14px,   8px);   }
 
-  /* P8: Breaks free — full spin, flies straight up */
-  100% { transform: rotate(-260deg) translateY(-200vh);      }
+  100% { transform: rotate(-260deg) translateY(-200vh);       }
 }
 `;
 
@@ -123,8 +112,9 @@ export function FloatingThem({ titleRef }: Props) {
   const [sticker, setSticker] = useState<StickerState>({
     x: -999, y: -999, rotate: 12, scaleX: 1, scaleY: 1, size: 24,
   });
-  const [phase, setPhase] = useState<Phase>("offscreen");
-  const cancelRef = useRef(false);
+  const [phase, setPhase]       = useState<Phase>("offscreen");
+  const [wandering, setWandering] = useState(false); // flips after peel to remount div
+  const cancelRef               = useRef(false);
 
   useEffect(() => {
     cancelRef.current = false;
@@ -145,16 +135,25 @@ export function FloatingThem({ titleRef }: Props) {
       setSticker({ x: tx, y: ty, rotate: 12, scaleX: 1, scaleY: 1, size: tSize });
       setPhase("title");
 
-      // Sit on the title for 1.5s
+      // Sit on the title 1.5s
       await wait(1500);
       if (cancelRef.current) return;
 
-      // Multi-phase peel — @keyframes owns the transform here (no inline transform)
+      // Complex peel — inline transform is removed so @keyframes owns it fully
       setPhase("peeling");
       await wait(4200);
       if (cancelRef.current) return;
 
-      // Wander loop — same cadence as original
+      // Flip the wandering flag — this remounts the div with a new key,
+      // completely clearing any lingering CSS animation state from the peel.
+      setWandering(true);
+
+      // Brief pause so the remounted div paints at its off-screen transform
+      // before we start sliding in.
+      await wait(80);
+      if (cancelRef.current) return;
+
+      // Wander loop — smooth enter/stick/exit with staggered 5–8s stuck times
       while (!cancelRef.current) {
         setSticker(pickRandom());
         setPhase("offscreen");
@@ -167,7 +166,8 @@ export function FloatingThem({ titleRef }: Props) {
         if (cancelRef.current) break;
 
         setPhase("stuck");
-        await wait(3000);
+        // Staggered 5–8 seconds (matches original cadence user liked)
+        await wait(5000 + Math.random() * 3000);
         if (cancelRef.current) break;
 
         setPhase("exiting");
@@ -183,7 +183,9 @@ export function FloatingThem({ titleRef }: Props) {
   const isPeeling   = phase === "peeling";
   const isOffscreen = phase === "offscreen" || phase === "exiting";
 
-  // Do NOT include transform when peeling — let @keyframes own it
+  // Do NOT set transform while isPeeling — @keyframes owns it entirely.
+  // Inline style.transform has higher CSS cascade priority than animations
+  // and will silently suppress the keyframe if both are present.
   const styleTransform = isPeeling
     ? undefined
     : [
@@ -203,10 +205,16 @@ export function FloatingThem({ titleRef }: Props) {
     }
   })();
 
+  // key="peel"    → the div used during the title-sit + peel animation
+  // key="wander"  → remounted fresh div used for smooth wandering after peel
+  // Different keys force React to unmount/remount, clearing all CSS animation state.
+  const divKey = wandering ? "wander" : "peel";
+
   return (
     <>
       <style>{PEEL_CSS}</style>
       <div
+        key={divKey}
         aria-hidden="true"
         style={{
           position: "fixed",
