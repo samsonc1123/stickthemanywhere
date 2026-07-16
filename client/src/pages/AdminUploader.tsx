@@ -25,6 +25,7 @@ export default function AdminUploader() {
   const [files, setFiles] = useState<File[]>([]);
   const [categoryCode, setCategoryCode] = useState('');
   const [subcategoryCode, setSubcategoryCode] = useState('');
+  const [characterName, setCharacterName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
@@ -57,9 +58,18 @@ export default function AdminUploader() {
     }
   };
 
+  // Derive the selected subcategory's display name for the name prefix
+  const selectedSub = subcategories.find(s => s.code === subcategoryCode);
+  const subName = selectedSub?.name ?? '';
+  // Full composed name: "Star Wars - Darth Vader"
+  const composedName = characterName.trim()
+    ? `${subName} - ${characterName.trim()}`
+    : '';
+
   const handleCategoryChange = (code: string) => {
     setCategoryCode(code);
     setSubcategoryCode('');
+    setCharacterName('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,15 +77,15 @@ export default function AdminUploader() {
 
     const invalidFiles = selectedFiles.filter(file => {
       const ext = file.name.toLowerCase().split('.').pop();
-      const validMime = file.type === 'image/png' || file.type === 'image/webp';
-      const validExt = ext === 'png' || ext === 'webp';
-      return !validMime || !validExt;
+      const validMime = ['image/png', 'image/webp', 'image/jpeg', 'image/jpg'].includes(file.type);
+      const validExt = ['png', 'webp', 'jpg', 'jpeg'].includes(ext ?? '');
+      return !validMime && !validExt;
     });
 
     if (invalidFiles.length > 0) {
       toast({
         title: 'Invalid File Type',
-        description: `Only PNG and WebP files are supported. Invalid files: ${invalidFiles.map(f => f.name).join(', ')}`,
+        description: `Only PNG, WebP, and JPG files are supported. Invalid: ${invalidFiles.map(f => f.name).join(', ')}`,
         variant: 'destructive',
       });
       e.target.value = '';
@@ -119,11 +129,14 @@ export default function AdminUploader() {
         }
 
         const { storageId } = await uploadResponse.json();
-        const nameWithoutExt = file.name.replace(/\.(png|webp)$/i, '');
+        // Use the composed "Franchise - Character" name if provided,
+        // otherwise fall back to the filename (for batch uploads without a name)
+        const nameWithoutExt = file.name.replace(/\.(png|webp|jpg|jpeg)$/i, '');
+        const stickerName = composedName || nameWithoutExt;
 
         const result = await finalizeStickerUpload({
           storageId,
-          name: nameWithoutExt,
+          name: stickerName,
           filename: file.name,
           categoryCode,
           subcategoryCode,
@@ -220,7 +233,7 @@ export default function AdminUploader() {
               <Input
                 id="file"
                 type="file"
-                accept="image/png,image/webp"
+                accept="image/png,image/webp,image/jpeg,image/jpg"
                 multiple
                 onChange={handleFileChange}
                 className="bg-gray-800 border-gray-600 text-white"
@@ -273,9 +286,30 @@ export default function AdminUploader() {
               </Select>
             </div>
 
+            {subcategoryCode && (
+              <div>
+                <Label htmlFor="charname" className="text-white">
+                  Character / Sticker Name *
+                </Label>
+                <Input
+                  id="charname"
+                  type="text"
+                  placeholder={`e.g. Darth Vader`}
+                  value={characterName}
+                  onChange={e => setCharacterName(e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+                {composedName && (
+                  <p className="text-cyan-400 text-xs mt-1 font-mono">
+                    Will be saved as: <span className="text-yellow-400 font-bold">{composedName}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
             <Button
               type="submit"
-              disabled={isUploading || files.length === 0 || !categoryCode || !subcategoryCode}
+              disabled={isUploading || files.length === 0 || !categoryCode || !subcategoryCode || !characterName.trim()}
               className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-bold"
               data-testid="button-upload"
             >

@@ -84,9 +84,15 @@ export const listAllStickers = query({
   args: {},
   handler: async (ctx) => {
     const stickers = await ctx.db.query("stickers").collect();
-    return stickers
+    const sorted = stickers
       .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
       .slice(0, 100);
+    const results = [];
+    for (const s of sorted) {
+      const imageUrl = s.storageId ? await ctx.storage.getUrl(s.storageId) : null;
+      results.push({ ...s, imageUrl });
+    }
+    return results;
   },
 });
 
