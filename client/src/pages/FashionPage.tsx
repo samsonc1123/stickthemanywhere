@@ -98,10 +98,11 @@ export default function FashionPage() {
                   onClick={() => setActiveCode(isActive ? null : sub.code)}
                   className="relative flex-shrink-0 rounded-full px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform"
                   style={{
-                    backgroundColor: lit ? "#00ffff" : GOLD,
+                    backgroundColor: GOLD,
                     color: "black",
-                    boxShadow: lit ? "0 0 8px #00ffff, 0 0 16px #00ffff55" : "none",
-                    transition: "background-color 0.4s ease, box-shadow 0.4s ease",
+                    boxShadow: lit ? `0 0 8px ${GOLD}, 0 0 16px ${GOLD}88` : "none",
+                    outline: lit ? `2px solid ${GOLD}` : "none",
+                    transition: "box-shadow 0.4s ease, outline 0.4s ease",
                   }}
                 >
                   {sub.name}
@@ -144,8 +145,8 @@ export default function FashionPage() {
                       key={sub.code}
                       className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 overflow-hidden relative"
                       style={{
-                        borderColor: lit ? "#00ffff" : "#374151",
-                        boxShadow: lit ? "0 0 10px #00ffff, 0 0 20px #00ffff55, inset 0 0 10px #00ffff22" : "none",
+                        borderColor: lit ? GOLD : "#374151",
+                        boxShadow: lit ? `0 0 10px ${GOLD}, 0 0 20px ${GOLD}55, inset 0 0 10px ${GOLD}22` : "none",
                         transition: "border-color 0.4s ease, box-shadow 0.4s ease",
                       }}
                     >
@@ -174,7 +175,7 @@ export default function FashionPage() {
                               {stickers.length > 1 && (
                                 <span
                                   className="absolute bottom-1 right-2 text-[8px] font-mono"
-                                  style={{ color: lit ? "#00ffff88" : "#37415188" }}
+                                  style={{ color: lit ? `${GOLD}88` : "#37415188" }}
                                 >
                                   {idx + 1}/{stickers.length}
                                 </span>
@@ -186,7 +187,7 @@ export default function FashionPage() {
                         <div className="flex flex-col items-center justify-center gap-2 w-full h-full px-3 text-center">
                           <span
                             className="text-xs font-montserrat font-bold leading-tight"
-                            style={{ color: lit ? "#00ffff" : "#4b5563" }}
+                            style={{ color: lit ? GOLD : "#4b5563" }}
                           >
                             {sub.name}
                           </span>
