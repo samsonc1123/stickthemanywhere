@@ -18,20 +18,29 @@ export default function MovieFranchisePage() {
   const franchiseName = subcategory?.name ?? code;
   const isLoading = subcategory === undefined || stickers === undefined;
 
-  // Group stickers by character name
-  const stickersByCharacter: Record<string, any[]> = {};
+  // 1 — Build roster first
+  const rawByChar: Record<string, any[]> = {};
   for (const sticker of stickers) {
     const prefix = `${franchiseName} - `;
-    const charName = sticker.name?.startsWith(prefix)
-      ? sticker.name.slice(prefix.length)
-      : sticker.name ?? sticker.code;
-    if (!stickersByCharacter[charName]) stickersByCharacter[charName] = [];
-    stickersByCharacter[charName].push(sticker);
+    const nameRaw = sticker.name ?? sticker.code;
+    const charName = nameRaw.toLowerCase().startsWith(prefix.toLowerCase())
+      ? nameRaw.slice(prefix.length)
+      : nameRaw;
+    if (!rawByChar[charName]) rawByChar[charName] = [];
+    rawByChar[charName].push(sticker);
   }
 
   const roster: string[] = FRANCHISE_CHARACTERS[code]
     ? [...FRANCHISE_CHARACTERS[code]].sort((a, b) => a.localeCompare(b))
-    : Object.keys(stickersByCharacter).sort((a, b) => a.localeCompare(b));
+    : Object.keys(rawByChar).sort((a, b) => a.localeCompare(b));
+
+  // 2 — Re-map raw keys → roster-casing (case-insensitive match)
+  const stickersByCharacter: Record<string, any[]> = {};
+  for (const [rawKey, stickerList] of Object.entries(rawByChar)) {
+    const rosterMatch = roster.find(r => r.toLowerCase() === rawKey.toLowerCase()) ?? rawKey;
+    if (!stickersByCharacter[rosterMatch]) stickersByCharacter[rosterMatch] = [];
+    stickersByCharacter[rosterMatch].push(...stickerList);
+  }
 
   // Spotlight: cycles every 2.2s — ONE pill + ONE box glow cyan together
   useEffect(() => {
@@ -187,7 +196,13 @@ export default function MovieFranchisePage() {
                       <img
                         src={sticker.imageUrl}
                         alt={sticker.name}
-                        className="max-h-full max-w-full object-contain p-2"
+                        style={{
+                          position: "absolute",
+                          inset: "10px",
+                          width: "calc(100% - 20px)",
+                          height: "calc(100% - 20px)",
+                          objectFit: "contain",
+                        }}
                         loading="lazy"
                       />
                     ) : (
