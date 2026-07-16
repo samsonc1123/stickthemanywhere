@@ -33,7 +33,7 @@ export default function MovieFranchisePage() {
     ? [...FRANCHISE_CHARACTERS[code]].sort((a, b) => a.localeCompare(b))
     : Object.keys(stickersByCharacter).sort((a, b) => a.localeCompare(b));
 
-  // Spotlight cycles across all characters every 2.2s
+  // Spotlight cycles across all characters every 2.2s — lights up pill + box together
   useEffect(() => {
     if (roster.length === 0) return;
     setGlowChar(roster[Math.floor(Math.random() * roster.length)]);
@@ -51,14 +51,13 @@ export default function MovieFranchisePage() {
 
   const displayed = activeChar ? roster.filter((c) => c === activeChar) : roster;
 
-  // Build flat list of boxes to display in order: all stickers for each displayed char
-  // Characters with stickers first (sorted), then coming-soon chars
+  // Flat list of boxes: each sticker gets one box; coming-soon chars get one placeholder box
   const boxes: Array<{ char: string; sticker: any | null; key: string }> = [];
   for (const char of displayed) {
     const charStickers = stickersByCharacter[char] ?? [];
     if (charStickers.length > 0) {
-      for (const sticker of charStickers) {
-        boxes.push({ char, sticker, key: sticker.code });
+      for (const s of charStickers) {
+        boxes.push({ char, sticker: s, key: s.code });
       }
     } else {
       boxes.push({ char, sticker: null, key: `placeholder-${char}` });
@@ -68,7 +67,7 @@ export default function MovieFranchisePage() {
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
 
-      {/* Title — blueprint section 1 */}
+      {/* Section 1 — Title */}
       <div className="text-center mb-3 lg:mb-2">
         <Link href="/movies">
           <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">
@@ -88,14 +87,14 @@ export default function MovieFranchisePage() {
         </Link>
       </div>
 
-      {/* Category title — blueprint section 2 */}
+      {/* Section 2 — Franchise name */}
       <div className="text-center mb-4 lg:mb-1">
         <h1 className="font-bold text-yellow-400 animate-categoriesFlicker font-audiowide text-lg">
           {isLoading ? "…" : franchiseName}
         </h1>
       </div>
 
-      {/* Character pills (subcategory buttons) — blueprint section 3 */}
+      {/* Section 3 — Character pills: horizontal scroll */}
       <div
         className="overflow-x-scroll overflow-y-hidden whitespace-nowrap px-4 py-2 w-full mb-3 lg:mb-2 auto-hide-scrollbar"
         style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x" }}
@@ -126,8 +125,8 @@ export default function MovieFranchisePage() {
               {roster.map((char) => {
                 const isUserSelected = activeChar === char;
                 const isGlowing = !activeChar && glowChar === char;
-                const hasStickers = (stickersByCharacter[char]?.length ?? 0) > 0;
                 const count = stickersByCharacter[char]?.length ?? 0;
+                const hasStickers = count > 0;
                 return (
                   <button
                     key={char}
@@ -159,64 +158,64 @@ export default function MovieFranchisePage() {
         </div>
       </div>
 
-      {/* Sticker boxes — blueprint section 4: horizontal scroll, border-4 neon-border-cyan, w-40 h-40 */}
-      <div
-        className="overflow-x-scroll overflow-y-hidden whitespace-nowrap w-full px-4 auto-hide-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x" }}
-      >
-        {isLoading ? (
-          <div className="inline-flex gap-3">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="inline-flex flex-col items-center justify-center w-40 h-40 landscape:w-36 landscape:h-36 flex-shrink-0 border-4 neon-border-cyan"
-              >
-                <span className="text-gray-500 animate-pulse text-xs">Loading…</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="inline-flex gap-3 pb-4">
-            {boxes.map(({ char, sticker, key }) => {
-              const isGlowing = !activeChar && glowChar === char;
-              const isUserSelected = activeChar === char;
-              return (
+      {/* Section 4 — Sticker boxes: VERTICAL GRID, border-4 neon-border-cyan, w-40 h-40 */}
+      <div className="w-full">
+        <div className="flex justify-center pb-4 landscape:pb-16">
+          <div className="grid grid-cols-2 landscape:grid-cols-4 md:grid-cols-3 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 px-4">
+
+            {isLoading ? (
+              [...Array(4)].map((_, i) => (
                 <div
-                  key={key}
-                  className="inline-flex flex-col items-center justify-center w-40 h-40 landscape:w-36 landscape:h-36 flex-shrink-0 border-4 neon-border-cyan overflow-hidden relative"
-                  style={{
-                    boxShadow: isGlowing || isUserSelected
-                      ? "0 0 12px #00ffff, 0 0 24px #00ffff55, inset 0 0 12px #00ffff22"
-                      : "none",
-                    transition: "box-shadow 0.4s ease",
-                  }}
+                  key={i}
+                  className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center"
                 >
-                  {sticker?.imageUrl ? (
-                    <img
-                      src={sticker.imageUrl}
-                      alt={sticker.name}
-                      className="max-h-full max-w-full object-contain p-2"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-1 px-2 text-center">
-                      <span
-                        className="text-xs font-montserrat font-bold leading-tight"
-                        style={{ color: isGlowing ? "#00ffff" : "#4b5563" }}
-                      >
-                        {char}
-                      </span>
-                      <span className="text-gray-700 text-[9px] font-mono uppercase tracking-wider">
-                        Coming Soon
-                      </span>
-                    </div>
-                  )}
+                  <span className="text-gray-500 animate-pulse text-xs">Loading…</span>
                 </div>
-              );
-            })}
+              ))
+            ) : (
+              boxes.map(({ char, sticker, key }) => {
+                const isGlowing = !activeChar && glowChar === char;
+                const isUserSelected = activeChar === char;
+                return (
+                  <div
+                    key={key}
+                    className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center overflow-hidden relative"
+                    style={{
+                      boxShadow: isGlowing || isUserSelected
+                        ? "0 0 12px #00ffff, 0 0 24px #00ffff55, inset 0 0 12px #00ffff22"
+                        : "none",
+                      transition: "box-shadow 0.4s ease",
+                    }}
+                  >
+                    {sticker?.imageUrl ? (
+                      <img
+                        src={sticker.imageUrl}
+                        alt={sticker.name}
+                        className="max-h-full max-w-full object-contain p-2"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
+                        <span
+                          className="text-xs font-montserrat font-bold leading-tight"
+                          style={{ color: isGlowing ? "#00ffff" : "#4b5563" }}
+                        >
+                          {char}
+                        </span>
+                        <span className="text-gray-700 text-[9px] font-mono uppercase tracking-wider">
+                          Coming Soon
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+
           </div>
-        )}
+        </div>
       </div>
+
     </div>
   );
 }
