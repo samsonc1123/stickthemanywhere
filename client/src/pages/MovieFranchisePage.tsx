@@ -154,61 +154,60 @@ export default function MovieFranchisePage() {
         </div>
       </div>
 
-      {/* Section 4 — Sticker boxes: single horizontal scroll row, same size as homepage */}
-      <div
-        className="overflow-x-scroll overflow-y-hidden whitespace-nowrap w-full px-4 auto-hide-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x" }}
-      >
-        <div className="inline-flex gap-3 pb-4">
-          {isLoading ? (
-            [...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="inline-flex flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 items-center justify-center"
-                style={{ borderColor: "#374151" }}
-              >
-                <span className="text-gray-600 animate-pulse text-xs">Loading…</span>
-              </div>
-            ))
-          ) : (
-            boxes.map(({ char, sticker, key }) => {
-              const isGlowing = !activeChar && glowChar === char;
-              const isSelected = activeChar === char;
-              const lit = isGlowing || isSelected;
-              return (
+      {/* Section 4 — Sticker boxes: VERTICAL GRID (same layout as homepage) */}
+      <div className="w-full">
+        <div className="flex justify-center pb-4 landscape:pb-16">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 max-w-lg landscape:max-w-4xl md:max-w-2xl md:landscape:max-w-6xl px-4">
+            {isLoading ? (
+              [...Array(4)].map((_, i) => (
                 <div
-                  key={key}
-                  className="inline-flex flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 items-center justify-center overflow-hidden relative"
-                  style={{
-                    borderColor: lit ? "#00ffff" : "#374151",
-                    boxShadow: lit ? "0 0 10px #00ffff, 0 0 20px #00ffff55, inset 0 0 10px #00ffff22" : "none",
-                    transition: "border-color 0.4s ease, box-shadow 0.4s ease",
-                  }}
+                  key={i}
+                  className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 flex items-center justify-center"
+                  style={{ borderColor: "#374151" }}
                 >
-                  {sticker?.imageUrl ? (
-                    <img
-                      src={sticker.imageUrl}
-                      alt={sticker.name}
-                      className="max-h-full max-w-full object-contain p-2"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
-                      <span
-                        className="text-xs font-montserrat font-bold leading-tight"
-                        style={{ color: lit ? "#00ffff" : "#4b5563" }}
-                      >
-                        {char}
-                      </span>
-                      <span className="text-gray-700 text-[9px] font-mono uppercase tracking-wider">
-                        Coming Soon
-                      </span>
-                    </div>
-                  )}
+                  <span className="text-gray-600 animate-pulse text-xs">Loading…</span>
                 </div>
-              );
-            })
-          )}
+              ))
+            ) : (
+              boxes.map(({ char, sticker, key }) => {
+                const isGlowing = !activeChar && glowChar === char;
+                const isSelected = activeChar === char;
+                const lit = isGlowing || isSelected;
+                return (
+                  <div
+                    key={key}
+                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 flex items-center justify-center overflow-hidden relative"
+                    style={{
+                      borderColor: lit ? "#00ffff" : "#374151",
+                      boxShadow: lit ? "0 0 10px #00ffff, 0 0 20px #00ffff55, inset 0 0 10px #00ffff22" : "none",
+                      transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+                    }}
+                  >
+                    {sticker?.imageUrl ? (
+                      <img
+                        src={sticker.imageUrl}
+                        alt={sticker.name}
+                        className="max-h-full max-w-full object-contain p-2"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
+                        <span
+                          className="text-xs font-montserrat font-bold leading-tight"
+                          style={{ color: lit ? "#00ffff" : "#4b5563" }}
+                        >
+                          {char}
+                        </span>
+                        <span className="text-gray-700 text-[9px] font-mono uppercase tracking-wider">
+                          Coming Soon
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 
