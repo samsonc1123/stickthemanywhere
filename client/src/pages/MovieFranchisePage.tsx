@@ -177,7 +177,6 @@ export default function MovieFranchisePage() {
                       border: `3px solid ${borderColor}`,
                       boxShadow,
                       transition: "border-color 0.4s ease, box-shadow 0.4s ease",
-                      backgroundColor: "#111",
                     }}
                   >
                     {sticker?.imageUrl ? (
