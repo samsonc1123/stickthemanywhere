@@ -6,32 +6,29 @@ interface StickerState {
   rotate: number;
   scaleX: number;
   scaleY: number;
-  size: number;
 }
 
-type Phase =
-  | "title"
-  | "peeling"
-  | "offscreen"
-  | "entering"
-  | "stuck"
-  | "exiting";
+// Phase timeline:
+//  title     → sitting over the title word, snapped in place
+//  pre_peel  → gently tilting as the chosen edge starts to lift (0.8s)
+//  peel_off  → flies off screen in the peel direction (0.85s)
+//  offscreen → instantly teleported to next position, off-screen on opposite side (no transition)
+//  entering  → slides from off-screen into the stuck position with a soft bounce (0.7s)
+//  stuck     → resting for 5–8s, then the cycle restarts
+type Phase = "title" | "pre_peel" | "peel_off" | "offscreen" | "entering" | "stuck";
 
 const rAF2 = () =>
   new Promise<void>((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
-
 const wait = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
 function pickRandom(): StickerState {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
   const isSafe = (x: number, y: number) => {
     if (y < 155) return false;
     if (x > vw * 0.08 && x < vw * 0.92) return false;
     return true;
   };
-
   let x = 0, y = 0, attempts = 0;
   while (attempts < 40) {
     const zone = Math.floor(Math.random() * 3);
@@ -48,14 +45,11 @@ function pickRandom(): StickerState {
     if (isSafe(x, y)) break;
     attempts++;
   }
-
   return {
-    x,
-    y,
+    x, y,
     rotate: Math.random() * 360 - 180,
     scaleX: Math.random() < 0.35 ? -1 : 1,
     scaleY: Math.random() < 0.25 ? -1 : 1,
-    size: 20 + Math.floor(Math.random() * 10),
   };
 }
 
@@ -63,115 +57,87 @@ interface Props {
   titleRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
-// Peel sequence (8 phases, big movements so each direction reads clearly):
-//  P1  0–18%   T edge — tilts from T corner, rolls hard right toward HEM
-//  P2 18–32%   HEM pops way up, drops heavy, sticks
-//  P3 32–52%   Sweeps left-to-right across all four edges, rolls, sticks
-//  P4 52–62%   Sharp pop straight up, drops, sticks
-//  P5 62–78%   MEHT reverse — M side peels, rolls back left toward T
-//  P6 78–87%   Pop up, drops, sticks
-//  P7 87–98%   Diagonal rip — top corner tears to kitty-corner of M
-//  P8 98–100%  Breaks free — full spin, launches straight up
-const PEEL_CSS = `
-@keyframes complexPeel {
-  0%   { transform: rotate(12deg)   translate(0px,    0px);   }
-
-  6%   { transform: rotate(35deg)   translate(60px,  -40px);  }
-  12%  { transform: rotate(70deg)   translate(130px, -60px);  }
-  18%  { transform: rotate(15deg)   translate(10px,  -4px);   }
-
-  22%  { transform: rotate(5deg)    translate(4px,  -110px);  }
-  28%  { transform: rotate(30deg)   translate(20px,   50px);  }
-  32%  { transform: rotate(12deg)   translate(2px,    2px);   }
-
-  38%  { transform: rotate(-30deg)  translate(-140px,-20px);  }
-  46%  { transform: rotate(50deg)   translate(160px, -30px);  }
-  52%  { transform: rotate(12deg)   translate(4px,    0px);   }
-
-  56%  { transform: rotate(0deg)    translate(0px,  -120px);  }
-  60%  { transform: rotate(20deg)   translate(10px,   14px);  }
-  62%  { transform: rotate(12deg)   translate(2px,    0px);   }
-
-  67%  { transform: rotate(55deg)   translate(120px, -50px);  }
-  75%  { transform: rotate(-45deg)  translate(-150px,-40px);  }
-  78%  { transform: rotate(8deg)    translate(-3px,   0px);   }
-
-  82%  { transform: rotate(0deg)    translate(0px,  -100px);  }
-  86%  { transform: rotate(14deg)   translate(6px,    8px);   }
-  87%  { transform: rotate(12deg)   translate(1px,    0px);   }
-
-  91%  { transform: rotate(-60deg)  translate(-80px, -90px);  }
-  96%  { transform: rotate(-130deg) translate(90px,  120px);  }
-  98%  { transform: rotate(-70deg)  translate(14px,   8px);   }
-
-  100% { transform: rotate(-260deg) translateY(-200vh);       }
-}
-`;
-
 export function FloatingThem({ titleRef }: Props) {
   const [sticker, setSticker] = useState<StickerState>({
-    x: -999, y: -999, rotate: 12, scaleX: 1, scaleY: 1, size: 24,
+    x: -999, y: -999, rotate: 12, scaleX: 1, scaleY: 1,
   });
-  const [phase, setPhase]       = useState<Phase>("offscreen");
-  const [wandering, setWandering] = useState(false); // flips after peel to remount div
-  const cancelRef               = useRef(false);
+  const [phase, setPhase] = useState<Phase>("offscreen");
+  const cancelRef = useRef(false);
+
+  // Peel direction — updated before every pre_peel phase.
+  // angle: 0–360° (0=right, 90=down, 180=left, 270=up)
+  // tilt:  how many degrees the sticker rotates as the edge lifts
+  // dx/dy: unit vector in the peel direction (for translate offscreen)
+  const peelRef = useRef({ tilt: 15, dx: 1, dy: 0 });
+
+  function choosePeel() {
+    const θ = Math.random() * 360;
+    const rad = (θ * Math.PI) / 180;
+    // Tilt sign: edges on the right/bottom half of the circle tilt CW (+), others CCW (-)
+    const tiltMag = 18 + Math.random() * 18; // 18–36°
+    const tiltSign = Math.cos(rad) >= 0 ? 1 : -1;
+    peelRef.current = {
+      tilt: tiltSign * tiltMag,
+      dx: Math.cos(rad),
+      dy: Math.sin(rad),
+    };
+  }
 
   useEffect(() => {
     cancelRef.current = false;
 
     const run = async () => {
+      // ── Snap onto the title word ──
       await wait(200);
       const el = titleRef?.current ?? null;
-      let tx = window.innerWidth / 2 - 28;
-      let ty = 22;
-      let tSize = 24;
+      let tx = window.innerWidth / 2 - 28, ty = 22;
       if (el) {
         const r = el.getBoundingClientRect();
-        tx = r.left;
-        ty = r.top;
-        tSize = Math.round(r.height * 0.9) || 24;
+        tx = r.left; ty = r.top;
       }
-
-      setSticker({ x: tx, y: ty, rotate: 12, scaleX: 1, scaleY: 1, size: tSize });
+      setSticker({ x: tx, y: ty, rotate: 12, scaleX: 1, scaleY: 1 });
       setPhase("title");
 
-      // Sit on the title 1.5s
       await wait(1500);
       if (cancelRef.current) return;
 
-      // Complex peel — inline transform is removed so @keyframes owns it fully
-      setPhase("peeling");
-      await wait(4200);
+      // ── Initial peel off the title ──
+      choosePeel();
+      setPhase("pre_peel");
+      await wait(820);
       if (cancelRef.current) return;
 
-      // Flip the wandering flag — this remounts the div with a new key,
-      // completely clearing any lingering CSS animation state from the peel.
-      setWandering(true);
-
-      // Brief pause so the remounted div paints at its off-screen transform
-      // before we start sliding in.
-      await wait(80);
+      setPhase("peel_off");
+      await wait(880);
       if (cancelRef.current) return;
 
-      // Wander loop — smooth enter/stick/exit with staggered 5–8s stuck times
+      // ── Wander loop ──
       while (!cancelRef.current) {
+        // Teleport to new position, arriving from the opposite of the peel direction
         setSticker(pickRandom());
         setPhase("offscreen");
 
         await rAF2();
         if (cancelRef.current) break;
 
+        // Slide into the stuck position
         setPhase("entering");
-        await wait(680);
+        await wait(720);
         if (cancelRef.current) break;
 
         setPhase("stuck");
-        // Staggered 5–8 seconds (matches original cadence user liked)
+        // Stagger 5–8 seconds so each visit feels different
         await wait(5000 + Math.random() * 3000);
         if (cancelRef.current) break;
 
-        setPhase("exiting");
-        await wait(500);
+        // Peel off this spot from a fresh random direction
+        choosePeel();
+        setPhase("pre_peel");
+        await wait(820);
+        if (cancelRef.current) break;
+
+        setPhase("peel_off");
+        await wait(880);
         if (cancelRef.current) break;
       }
     };
@@ -180,64 +146,81 @@ export function FloatingThem({ titleRef }: Props) {
     return () => { cancelRef.current = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isPeeling   = phase === "peeling";
-  const isOffscreen = phase === "offscreen" || phase === "exiting";
+  // ── Build transform per phase ──
+  const { tilt, dx, dy } = peelRef.current;
+  // Off-screen distance in viewport units — large enough to leave any screen size
+  const OX = dx * 140; // vw
+  const OY = dy * 140; // vh
 
-  // Do NOT set transform while isPeeling — @keyframes owns it entirely.
-  // Inline style.transform has higher CSS cascade priority than animations
-  // and will silently suppress the keyframe if both are present.
-  const styleTransform = isPeeling
-    ? undefined
-    : [
-        isOffscreen ? "translateY(-140vh)" : "translateY(0px)",
-        `rotate(${sticker.rotate}deg)`,
-        `scaleX(${sticker.scaleX}) scaleY(${sticker.scaleY})`,
-      ].join(" ");
+  let transform: string;
+  switch (phase) {
+    case "title":
+      transform = "rotate(12deg)";
+      break;
+    case "pre_peel":
+      // Edge begins to lift: gentle tilt + very subtle scale suggesting curl
+      transform = `rotate(${tilt}deg) scale(0.97, 0.94)`;
+      break;
+    case "peel_off":
+      // Accelerates off screen in the peel direction with more rotation
+      transform = `rotate(${tilt * 2}deg) translate(${OX}vw, ${OY}vh)`;
+      break;
+    case "offscreen":
+      // Placed at the new (x,y) but translated to the opposite off-screen side
+      // so the entering slide comes from the opposing direction of the last peel
+      transform = `translate(${-OX}vw, ${-OY}vh) rotate(${sticker.rotate}deg) scaleX(${sticker.scaleX}) scaleY(${sticker.scaleY})`;
+      break;
+    case "entering":
+    case "stuck":
+      transform = `rotate(${sticker.rotate}deg) scaleX(${sticker.scaleX}) scaleY(${sticker.scaleY})`;
+      break;
+    default:
+      transform = "none";
+  }
 
-  const styleTransition: string = isPeeling ? "none" : (() => {
-    switch (phase) {
-      case "title":     return "none";
-      case "offscreen": return "none";
-      case "entering":  return "transform 0.62s cubic-bezier(0.34, 1.56, 0.64, 1)";
-      case "stuck":     return "none";
-      case "exiting":   return "transform 0.46s cubic-bezier(0.55, 0, 1, 0.45)";
-      default:          return "none";
-    }
-  })();
-
-  // key="peel"    → the div used during the title-sit + peel animation
-  // key="wander"  → remounted fresh div used for smooth wandering after peel
-  // Different keys force React to unmount/remount, clearing all CSS animation state.
-  const divKey = wandering ? "wander" : "peel";
+  // ── Build transition per phase ──
+  let transition: string;
+  switch (phase) {
+    case "title":
+    case "offscreen":
+    case "stuck":
+      transition = "none";
+      break;
+    case "pre_peel":
+      transition = "transform 0.82s ease-in-out";
+      break;
+    case "peel_off":
+      transition = "transform 0.88s ease-in";
+      break;
+    case "entering":
+      // Soft bounce as it lands
+      transition = "transform 0.72s cubic-bezier(0.34, 1.56, 0.64, 1)";
+      break;
+    default:
+      transition = "none";
+  }
 
   return (
-    <>
-      <style>{PEEL_CSS}</style>
-      <div
-        key={divKey}
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          left: sticker.x,
-          top: sticker.y,
-          zIndex: 9500,
-          pointerEvents: "none",
-          fontFamily: "Pacifico, cursive",
-          fontSize: `${sticker.size}px`,
-          color: "#f472b6",
-          textShadow: "0 2px 6px rgba(244,114,182,0.8), 0 0 18px rgba(244,114,182,0.4)",
-          ...(styleTransform !== undefined && { transform: styleTransform }),
-          transition: styleTransition,
-          animation: isPeeling
-            ? "complexPeel 4.2s ease-in-out forwards"
-            : "none",
-          userSelect: "none",
-          willChange: "transform",
-          whiteSpace: "nowrap",
-        }}
-      >
-        Them
-      </div>
-    </>
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        left: sticker.x,
+        top: sticker.y,
+        zIndex: 9500,
+        pointerEvents: "none",
+        fontFamily: "Pacifico, cursive",
+        fontSize: "24px",
+        color: "#f472b6",
+        textShadow: "0 2px 6px rgba(244,114,182,0.8), 0 0 18px rgba(244,114,182,0.4)",
+        transform,
+        transition,
+        userSelect: "none",
+        willChange: "transform",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Them
+    </div>
   );
 }
