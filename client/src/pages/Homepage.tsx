@@ -169,14 +169,14 @@ export default function HomePage() {
           touchAction: 'pan-x'
         }}
       >
-        {["90's Cartoons", "Animated Series", "Animals", "Anime", "Cars", "Christian", "Disney", "Dragons", "Fashion", "Flowers", "Food & Drink", "Gaming", "Hello Kitty", "Kawaii", "Hispanic", "Marijuana", "Memes", "Movies", "Pokemon", "Sports", "Psychedelic", "Trump", "TV Shows", "Unicorns"].map((cat) => {
-          const href = cat === "Flowers" ? "/flowers" : cat === "Fashion" ? "/fashion" : cat === "Kawaii" ? "/kawaii" : cat === "Hello Kitty" ? "/hellokitty" : cat === "Marijuana" ? "/marijuana" : cat === "Trump" ? "/trump" : cat === "Hispanic" ? "/hispanic" : cat === "Pokemon" ? "/pokemon" : cat === "Animated Series" ? "/animatedseries" : cat === "Food & Drink" ? "/food-drink" : cat === "Psychedelic" ? "/trip" : cat === "90's Cartoons" ? "/" : cat === "Disney" ? "/disney" : cat === "Unicorns" ? "/unicorns" : cat === "Dragons" ? "/dragons" : `/${cat.toLowerCase().replace(/\s/g, '')}`;
+        {["90's Cartoons", "Animated Series", "Animals", "Anime", "Cars", "Christian", "Disney", "Dragons", "Fashion", "Flowers", "Food & Drink", "Gaming", "Hello Kitty", "Kawaii", "Hispanic", "Marijuana", "Memes", "Movies", "Musicians", "Pokemon", "Sports", "Psychedelic", "Trump", "TV Shows", "Unicorns"].map((cat) => {
+          const href = cat === "Flowers" ? "/flowers" : cat === "Fashion" ? "/fashion" : cat === "Kawaii" ? "/kawaii" : cat === "Hello Kitty" ? "/hellokitty" : cat === "Marijuana" ? "/marijuana" : cat === "Trump" ? "/trump" : cat === "Hispanic" ? "/hispanic" : cat === "Pokemon" ? "/pokemon" : cat === "Animated Series" ? "/animatedseries" : cat === "Food & Drink" ? "/food-drink" : cat === "Psychedelic" ? "/trip" : cat === "90's Cartoons" ? "/" : cat === "Disney" ? "/disney" : cat === "Unicorns" ? "/unicorns" : cat === "Dragons" ? "/dragons" : cat === "Musicians" ? "/musicians" : `/${cat.toLowerCase().replace(/\s/g, '')}`;
         
         
           return (
             <Link key={cat} href={href}>
               <button 
-                className={`inline-block rounded-full ${cat === "Trump" ? "relative overflow-hidden" : cat === "Christian" ? "bg-yellow-400" : cat === "Fashion" ? "relative overflow-hidden" : cat === "Flowers" ? "bg-pink-300" : cat === "Kawaii" ? "bg-purple-500" : cat === "Hello Kitty" ? "bg-neon-pink" : cat === "Unicorns" ? "bg-pink-400" : cat === "Dragons" ? "bg-red-600" : cat === "Marijuana" ? "relative overflow-hidden" : cat === "Hispanic" ? "bg-orange-500" : cat === "Pokemon" ? "bg-neon-yellow" : cat === "Disney" ? "bg-blue-400" : cat === "Psychedelic" ? "relative overflow-hidden" : "bg-neon-aqua"} px-4 py-2 mx-1 font-montserrat`}
+                className={`inline-block rounded-full ${cat === "Trump" ? "relative overflow-hidden" : cat === "Christian" ? "bg-yellow-400" : cat === "Fashion" ? "relative overflow-hidden" : cat === "Flowers" ? "bg-pink-300" : cat === "Kawaii" ? "bg-purple-500" : cat === "Hello Kitty" ? "bg-neon-pink" : cat === "Unicorns" ? "bg-pink-400" : cat === "Dragons" ? "bg-red-600" : cat === "Marijuana" ? "relative overflow-hidden" : cat === "Hispanic" ? "bg-orange-500" : cat === "Pokemon" ? "bg-neon-yellow" : cat === "Disney" ? "bg-blue-400" : cat === "Psychedelic" ? "relative overflow-hidden" : cat === "Musicians" ? "" : "bg-neon-aqua"} px-4 py-2 mx-1 font-montserrat`}
                 style={cat === "Trump" ? { 
                   color: 'black',
                   background: 'linear-gradient(180deg, #b22234 0%, #b22234 15%, white 15%, white 30%, #b22234 30%, #b22234 45%, white 45%, white 60%, #b22234 60%, #b22234 75%, white 75%, white 90%, #b22234 90%)',
@@ -205,6 +205,10 @@ export default function HomePage() {
                   boxShadow: 'inset 0 0 10px #4ade80, 0 0 5px #a855f7',
                   border: '1px solid #2d5a27',
                   textShadow: '0 0 3px #fff, 0 0 10px #4ade80'
+                } : cat === "Musicians" ? {
+                  color: 'black',
+                  backgroundColor: '#e879f9',
+                  boxShadow: '0 0 8px #e879f9aa'
                 } : { color: 'black' }}
               >
                 {cat === "Pokemon" && (
@@ -245,7 +249,7 @@ export default function HomePage() {
       <div className="w-full">
         <div className="flex justify-center pb-4 landscape:pb-16">
           <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 max-w-lg landscape:max-w-4xl md:max-w-2xl md:landscape:max-w-6xl px-4">
-            {["90's Cartoons", "Animated Series", "Animals", "Anime", "Cars", "Christian", "Disney", "Dragons", "Fashion", "Flowers", "Food & Drink", "Gaming", "Hello Kitty", "Kawaii", "Hispanic", "Marijuana", "Memes", "Movies", "Pokemon", "Sports", "Psychedelic", "Trump", "TV Shows", "Unicorns"].map((cat, i) => (
+            {["90's Cartoons", "Animated Series", "Animals", "Anime", "Cars", "Christian", "Disney", "Dragons", "Fashion", "Flowers", "Food & Drink", "Gaming", "Hello Kitty", "Kawaii", "Hispanic", "Marijuana", "Memes", "Movies", "Musicians", "Pokemon", "Sports", "Psychedelic", "Trump", "TV Shows", "Unicorns"].map((cat, i) => (
               <div key={i} className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center">
                 <div className="flex items-center justify-center w-full h-full">
                   <span className="text-gray-500">{cat}</span>

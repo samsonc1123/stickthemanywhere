@@ -45,6 +45,7 @@ import DisneyPage from './pages/DisneyPage';
 import UnicornsPage from './pages/UnicornsPage';
 import DragonsPage from './pages/DragonsPage';
 import FashionPage from './pages/FashionPage';
+import MusicianPage from './pages/MusicianPage';
 import DailyReport from './pages/DailyReport';
 import GitHubAdmin from './pages/GitHubAdmin';
 import StickerList from './components/StickerList';
@@ -95,6 +96,7 @@ function Router() {
       <Route path="/unicorns" component={UnicornsPage} />
       <Route path="/dragons" component={DragonsPage} />
       <Route path="/fashion" component={FashionPage} />
+      <Route path="/musicians" component={MusicianPage} />
       <Route path="/memes" component={MemesPage} />
       <Route path="/sports" component={SportsPage} />
       <Route path="/mario" component={MarioPage} />
