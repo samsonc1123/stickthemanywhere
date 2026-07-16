@@ -33,6 +33,7 @@ export default function AdminPage() {
   const signOutMutation = useMutation(api.magicAuth.signOut);
   const bootstrapAdmin = useMutation(api.roles.bootstrapAdmin);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [autoOpened, setAutoOpened] = useState(false);
 
   const search = useSearch();
   const [email, setEmail] = useState("Jhonnycomelately82@gmail.com");
@@ -45,11 +46,16 @@ export default function AdminPage() {
   const [bootstrapping, setBootstrapping] = useState(false);
   const [clickCount, setClickCount] = useState(0);
 
-  // Auto-verify token from URL on load
+  // Auto-verify token from URL on load — also auto-opens the panel so user sees the result
   useEffect(() => {
     const params = new URLSearchParams(search);
     const token = params.get("token");
     if (!token || isAuthenticated) return;
+
+    if (!autoOpened) {
+      setPanelOpen(true);
+      setAutoOpened(true);
+    }
 
     setVerifying(true);
     setAuthError(null);
@@ -57,8 +63,8 @@ export default function AdminPage() {
       .then((result) => {
         if (result.success) {
           saveSession(result.sessionId);
-          // Clean the token from URL
           window.history.replaceState({}, "", "/admin");
+          setPanelOpen(false);
         } else {
           setAuthError(result.error ?? "Verification failed");
         }
@@ -114,18 +120,22 @@ export default function AdminPage() {
     }
   };
 
-  const showFullPanel = !isAuthenticated || panelOpen;
+  const showFullPanel = panelOpen;
 
   return (
     <>
       <AdminDashboard />
 
-      {isAuthenticated && !panelOpen && (
+      {!panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}
-          className="fixed top-4 left-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 border border-green-500/40 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest text-green-400 hover:border-green-400 transition-colors"
+          className={`fixed top-4 left-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest transition-colors ${
+            isAuthenticated
+              ? "border border-green-500/40 text-green-400 hover:border-green-400"
+              : "border border-gray-600/40 text-gray-500 hover:border-gray-400"
+          }`}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className={`w-1.5 h-1.5 rounded-full ${isAuthenticated ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
           Admin
         </button>
       )}
