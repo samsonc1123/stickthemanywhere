@@ -63,61 +63,66 @@ interface Props {
   titleRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
-// Multi-phase peel keyframes:
-//  Phase 1 (0–17%):  T edge curls — sticker tilts from the T side and rolls toward HEM
-//  Phase 2 (17–31%): HEM pops up, falls heavy, sticks back down
-//  Phase 3 (31–50%): Full sweep left-to-right along all four edges
-//  Phase 4 (50–60%): Quick pop, lands and sticks
-//  Phase 5 (60–77%): MEHT reverse — M side lifts, rolls back the other way toward T
-//  Phase 6 (77–86%): Pop, lands and sticks again
-//  Phase 7 (86–98%): Diagonal rip — top corner through to kitty-corner of the M
-//  Phase 8 (98–100%): Final peel — flies straight up and away
-const PEEL_KEYFRAMES = `
+// CRITICAL: inline style.transform overrides @keyframes (inline > animation in CSS cascade).
+// We must NOT set transform in the style object while peeling — the animation owns it entirely.
+//
+// Phase timeline (each phase is deliberately large so it reads clearly on screen):
+//  P1  0–18%   T edge rolls right toward HEM  — big rightward arc + spin
+//  P2 18–32%   HEM pops way up, drops heavy, sticks
+//  P3 32–52%   Left→right sweep across screen + roll, sticks
+//  P4 52–62%   Sharp pop straight up, drops, sticks
+//  P5 62–78%   MEHT reverse — M side peels, whole word rolls hard back left toward T
+//  P6 78–87%   Pop up, drops, sticks
+//  P7 87–98%   Diagonal rip — top corner tears to kitty-corner of M (across and down)
+//  P8 98–100%  Breaks free — spins and launches straight up off-screen
+const PEEL_CSS = `
 @keyframes complexPeel {
-  0%   { transform: rotate(12deg) translate(0px,   0px);   }
+  0%   { transform: rotate(12deg)   translate(0px,   0px);   }
 
-  /* Phase 1: T edge curls/rolls rightward toward HEM */
-  5%   { transform: rotate(18deg) translate(10px,  -10px); }
-  11%  { transform: rotate(30deg) translate(26px,  -20px); }
-  17%  { transform: rotate(13deg) translate(7px,   -3px);  }
+  /* P1: T-edge curls — rolls rightward toward HEM */
+  6%   { transform: rotate(35deg)   translate(60px,  -40px); }
+  12%  { transform: rotate(70deg)   translate(130px, -60px); }
+  18%  { transform: rotate(15deg)   translate(10px,  -4px);  }
 
-  /* Phase 2: HEM pops up sharply, drops, sticks */
-  21%  { transform: rotate(6deg)  translate(3px,   -36px); }
-  27%  { transform: rotate(24deg) translate(14px,   20px); }
-  31%  { transform: rotate(12deg) translate(2px,    1px);  }
+  /* P2: HEM pops way up, falls heavy, sticks */
+  22%  { transform: rotate(5deg)    translate(4px,  -110px); }
+  28%  { transform: rotate(30deg)   translate(20px,   50px); }
+  32%  { transform: rotate(12deg)   translate(2px,    2px);  }
 
-  /* Phase 3: sweeps left-to-right across all four edges */
-  37%  { transform: rotate(-14deg) translate(-22px, -12px); }
-  44%  { transform: rotate(26deg)  translate(36px,  -18px); }
-  50%  { transform: rotate(12deg)  translate(4px,    0px);  }
+  /* P3: Full left→right sweep, rolls across, sticks */
+  38%  { transform: rotate(-30deg)  translate(-140px, -20px);}
+  46%  { transform: rotate(50deg)   translate(160px,  -30px);}
+  52%  { transform: rotate(12deg)   translate(4px,    0px);  }
 
-  /* Phase 4: quick pop, lands, sticks */
-  54%  { transform: rotate(3deg)  translate(2px,   -30px); }
-  58%  { transform: rotate(16deg) translate(6px,    5px);  }
-  60%  { transform: rotate(12deg) translate(2px,    0px);  }
+  /* P4: Sharp pop up, lands, sticks */
+  56%  { transform: rotate(0deg)    translate(0px,  -120px); }
+  60%  { transform: rotate(20deg)   translate(10px,   14px); }
+  62%  { transform: rotate(12deg)   translate(2px,    0px);  }
 
-  /* Phase 5: MEHT reverse — M side peels, rolls back toward T */
-  65%  { transform: rotate(34deg)  translate(30px,  -16px); }
-  73%  { transform: rotate(-20deg) translate(-26px, -24px); }
-  77%  { transform: rotate(8deg)   translate(-2px,   0px);  }
+  /* P5: MEHT reverse — M side peels, rolls hard back toward T */
+  67%  { transform: rotate(55deg)   translate(120px, -50px); }
+  75%  { transform: rotate(-45deg)  translate(-150px,-40px); }
+  78%  { transform: rotate(8deg)    translate(-3px,   0px);  }
 
-  /* Phase 6: pop, lands and sticks */
-  81%  { transform: rotate(0deg)  translate(0px,  -32px); }
-  84%  { transform: rotate(11deg) translate(4px,   4px);  }
-  86%  { transform: rotate(12deg) translate(1px,   0px);  }
+  /* P6: Pop, drops heavy, sticks */
+  82%  { transform: rotate(0deg)    translate(0px,  -100px); }
+  86%  { transform: rotate(14deg)   translate(6px,    8px);  }
+  87%  { transform: rotate(12deg)   translate(1px,    0px);  }
 
-  /* Phase 7: diagonal rip — top corner sweeps to kitty-corner of M */
-  90%  { transform: rotate(-40deg) translate(-20px, -26px); }
-  96%  { transform: rotate(-80deg) translate(26px,   36px); }
-  98%  { transform: rotate(-55deg) translate(10px,   8px);  }
+  /* P7: Diagonal — tears from top corner to kitty-corner of M */
+  91%  { transform: rotate(-60deg)  translate(-80px, -90px); }
+  96%  { transform: rotate(-130deg) translate(90px,  120px); }
+  98%  { transform: rotate(-70deg)  translate(14px,   8px);  }
 
-  /* Phase 8: breaks free — flies straight up and out */
-  100% { transform: rotate(-200deg) translateY(-170vh); }
+  /* P8: Breaks free — full spin, flies straight up */
+  100% { transform: rotate(-260deg) translateY(-200vh);      }
 }
 `;
 
 export function FloatingThem({ titleRef }: Props) {
-  const [sticker, setSticker] = useState<StickerState>({ x: -999, y: -999, rotate: 12, scaleX: 1, scaleY: 1, size: 24 });
+  const [sticker, setSticker] = useState<StickerState>({
+    x: -999, y: -999, rotate: 12, scaleX: 1, scaleY: 1, size: 24,
+  });
   const [phase, setPhase] = useState<Phase>("offscreen");
   const cancelRef = useRef(false);
 
@@ -144,12 +149,12 @@ export function FloatingThem({ titleRef }: Props) {
       await wait(1500);
       if (cancelRef.current) return;
 
-      // Trigger the complex multi-phase peel (4s total)
+      // Multi-phase peel — @keyframes owns the transform here (no inline transform)
       setPhase("peeling");
-      await wait(4100);
+      await wait(4200);
       if (cancelRef.current) return;
 
-      // Wander forever
+      // Wander loop — same cadence as original
       while (!cancelRef.current) {
         setSticker(pickRandom());
         setPhase("offscreen");
@@ -175,20 +180,19 @@ export function FloatingThem({ titleRef }: Props) {
     return () => { cancelRef.current = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isPeeling = phase === "peeling";
-  const offscreen = phase === "offscreen" || phase === "exiting";
+  const isPeeling   = phase === "peeling";
+  const isOffscreen = phase === "offscreen" || phase === "exiting";
 
-  const transform = isPeeling
-    ? "rotate(12deg) translate(0px, 0px)"
+  // Do NOT include transform when peeling — let @keyframes own it
+  const styleTransform = isPeeling
+    ? undefined
     : [
-        offscreen ? "translateY(-140vh)" : "translateY(0px)",
+        isOffscreen ? "translateY(-140vh)" : "translateY(0px)",
         `rotate(${sticker.rotate}deg)`,
         `scaleX(${sticker.scaleX}) scaleY(${sticker.scaleY})`,
       ].join(" ");
 
-  const animation = isPeeling ? "complexPeel 4s cubic-bezier(0.4, 0, 0.6, 1) forwards" : "none";
-
-  const transition: string = isPeeling ? "none" : (() => {
+  const styleTransition: string = isPeeling ? "none" : (() => {
     switch (phase) {
       case "title":     return "none";
       case "offscreen": return "none";
@@ -201,7 +205,7 @@ export function FloatingThem({ titleRef }: Props) {
 
   return (
     <>
-      <style>{PEEL_KEYFRAMES}</style>
+      <style>{PEEL_CSS}</style>
       <div
         aria-hidden="true"
         style={{
@@ -214,9 +218,11 @@ export function FloatingThem({ titleRef }: Props) {
           fontSize: `${sticker.size}px`,
           color: "#f472b6",
           textShadow: "0 2px 6px rgba(244,114,182,0.8), 0 0 18px rgba(244,114,182,0.4)",
-          transform,
-          transition,
-          animation,
+          ...(styleTransform !== undefined && { transform: styleTransform }),
+          transition: styleTransition,
+          animation: isPeeling
+            ? "complexPeel 4.2s ease-in-out forwards"
+            : "none",
           userSelect: "none",
           willChange: "transform",
           whiteSpace: "nowrap",
