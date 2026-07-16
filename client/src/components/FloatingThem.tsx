@@ -1,226 +1,202 @@
 import { useState, useEffect, useRef } from "react";
 
-interface StickerState {
-  x: number;
-  y: number;
-  rotate: number;
-  scaleX: number;
-  scaleY: number;
-}
+// ── TIMING ────────────────────────────────────────────────────────────────────
+const STEP_MS   = 165;   // delay between each letter starting its peel
+const LETTER_MS = 400;   // each letter's rotation duration
+const WAVE_DONE = (n: number) => (n - 1) * STEP_MS + LETTER_MS + 30;
 
-// Phase timeline:
-//  title     → sitting over the title word, snapped in place
-//  pre_peel  → gently tilting as the chosen edge starts to lift (0.8s)
-//  peel_off  → flies off screen in the peel direction (0.85s)
-//  offscreen → instantly teleported to next position, off-screen on opposite side (no transition)
-//  entering  → slides from off-screen into the stuck position with a soft bounce (0.7s)
-//  stuck     → resting for 5–8s, then the cycle restarts
-type Phase = "title" | "pre_peel" | "peel_off" | "offscreen" | "entering" | "stuck";
+// ── POSITIONS ─────────────────────────────────────────────────────────────────
+interface Pos { x: number; y: number; rot: number; }
 
-const rAF2 = () =>
-  new Promise<void>((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
-const wait = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
-
-function pickRandom(): StickerState {
+function pick(): Pos {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const isSafe = (x: number, y: number) => {
-    if (y < 155) return false;
-    if (x > vw * 0.08 && x < vw * 0.92) return false;
-    return true;
-  };
-  let x = 0, y = 0, attempts = 0;
-  while (attempts < 40) {
-    const zone = Math.floor(Math.random() * 3);
-    if (zone === 0) {
-      x = Math.random() * Math.max(vw * 0.1, 36) + 4;
-      y = 170 + Math.random() * (vh - 180);
-    } else if (zone === 1) {
-      x = vw * 0.88 + Math.random() * Math.max(vw * 0.1, 36);
-      y = 170 + Math.random() * (vh - 180);
-    } else {
-      x = Math.random() * (vw - 60) + 10;
-      y = vh * 0.83 + Math.random() * (vh * 0.14);
-    }
-    if (isSafe(x, y)) break;
-    attempts++;
+  // Three landing zones: left gutter, right gutter, bottom strip
+  const r = Math.random();
+  if (r < 0.35) {
+    return { x: 6 + Math.random() * Math.max(vw * 0.1, 30), y: 170 + Math.random() * (vh - 240), rot: Math.random() * 60 - 30 };
+  } else if (r < 0.7) {
+    return { x: vw * 0.87 + Math.random() * Math.max(vw * 0.1, 30), y: 170 + Math.random() * (vh - 240), rot: Math.random() * 60 - 30 };
+  } else {
+    return { x: 20 + Math.random() * (vw - 120), y: vh * 0.79 + Math.random() * (vh * 0.16), rot: Math.random() * 60 - 30 };
   }
-  return {
-    x, y,
-    rotate: Math.random() * 360 - 180,
-    scaleX: Math.random() < 0.35 ? -1 : 1,
-    scaleY: Math.random() < 0.25 ? -1 : 1,
-  };
 }
 
-interface Props {
-  titleRef?: React.RefObject<HTMLSpanElement | null>;
-}
+// ── LETTERS ───────────────────────────────────────────────────────────────────
+const L = ["T", "h", "e", "m"];
+
+interface Props { titleRef?: React.RefObject<HTMLSpanElement | null>; }
 
 export function FloatingThem({ titleRef }: Props) {
-  const [sticker, setSticker] = useState<StickerState>({
-    x: -999, y: -999, rotate: 12, scaleX: 1, scaleY: 1,
-  });
-  const [phase, setPhase] = useState<Phase>("offscreen");
-  const cancelRef = useRef(false);
+  // Per-letter rotateX in degrees (0 = flat face-up, -90 = standing edge, -180 = flat face-down)
+  const [angles, setAngles] = useState([0, 0, 0, 0]);
+  const [pos,    setPos]    = useState<Pos>({ x: -300, y: -300, rot: 12 });
+  const [moving, setMoving] = useState(false);
+  const cancel = useRef(false);
 
-  // Peel direction — updated before every pre_peel phase.
-  // angle: 0–360° (0=right, 90=down, 180=left, 270=up)
-  // tilt:  how many degrees the sticker rotates as the edge lifts
-  // dx/dy: unit vector in the peel direction (for translate offscreen)
-  const peelRef = useRef({ tilt: 15, dx: 1, dy: 0 });
+  // ── helpers ─────────────────────────────────────────────────────────────────
+  const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-  function choosePeel() {
-    const θ = Math.random() * 360;
-    const rad = (θ * Math.PI) / 180;
-    // Tilt sign: edges on the right/bottom half of the circle tilt CW (+), others CCW (-)
-    const tiltMag = 18 + Math.random() * 18; // 18–36°
-    const tiltSign = Math.cos(rad) >= 0 ? 1 : -1;
-    peelRef.current = {
-      tilt: tiltSign * tiltMag,
-      dx: Math.cos(rad),
-      dy: Math.sin(rad),
-    };
-  }
+  // Animate a wave: letters given by `order` array each rotate to `deg`
+  // staggered by STEP_MS.  Resolves when the last letter finishes.
+  const wave = (order: number[], deg: number) =>
+    new Promise<void>(res => {
+      order.forEach((idx, i) =>
+        setTimeout(() =>
+          setAngles(prev => { const n = [...prev]; n[idx] = deg; return n; }),
+          i * STEP_MS
+        )
+      );
+      setTimeout(res, WAVE_DONE(order.length));
+    });
 
+  // Fly word to a new screen position
+  const flyTo = async (p: Pos) => {
+    setMoving(true);
+    setPos(p);
+    setAngles([0, 0, 0, 0]);       // reset letter angles while in flight
+    await wait(600);
+    setMoving(false);
+  };
+
+  // ── main sequence ────────────────────────────────────────────────────────────
   useEffect(() => {
-    cancelRef.current = false;
+    cancel.current = false;
+    const chk = () => cancel.current;
 
-    const run = async () => {
-      // ── Snap onto the title word ──
-      await wait(200);
-      const el = titleRef?.current ?? null;
-      let tx = window.innerWidth / 2 - 28, ty = 22;
-      if (el) {
-        const r = el.getBoundingClientRect();
-        tx = r.left; ty = r.top;
-      }
-      setSticker({ x: tx, y: ty, rotate: 12, scaleX: 1, scaleY: 1 });
-      setPhase("title");
+    (async () => {
+      // ── SNAP ONTO TITLE ──────────────────────────────────────────────────
+      await wait(350);
+      if (chk()) return;
 
-      await wait(1500);
-      if (cancelRef.current) return;
+      const el = titleRef?.current;
+      let tx = window.innerWidth / 2 - 32, ty = 20;
+      if (el) { const r = el.getBoundingClientRect(); tx = r.left; ty = r.top; }
+      setPos({ x: tx, y: ty, rot: 12 });
+      setAngles([0, 0, 0, 0]);
+      await wait(700);
+      if (chk()) return;
 
-      // ── Initial peel off the title ──
-      choosePeel();
-      setPhase("pre_peel");
-      await wait(820);
-      if (cancelRef.current) return;
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // PHASE 1 — Peel from T rolling to M, stand on M, fall flat
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      setPhase("peel_off");
-      await wait(880);
-      if (cancelRef.current) return;
+      // Step A: T(0) → h(1) → e(2) → m(3) each peel to -90° (standing)
+      //         By the time m reaches -90° the word is "standing on its M"
+      await wave([0, 1, 2, 3], -90);
+      if (chk()) return;
 
-      // ── Wander loop ──
-      while (!cancelRef.current) {
-        // Teleport to new position, arriving from the opposite of the peel direction
-        setSticker(pickRandom());
-        setPhase("offscreen");
+      // Dramatic pause — word balanced upright on M
+      await wait(380);
+      if (chk()) return;
 
-        await rAF2();
-        if (cancelRef.current) break;
+      // Step B: Falls flat — M side drops first (3→0), letters return to 0°
+      //         (they complete the arc and land flat on the other side)
+      await wave([3, 2, 1, 0], -180);
+      if (chk()) return;
 
-        // Slide into the stuck position
-        setPhase("entering");
-        await wait(720);
-        if (cancelRef.current) break;
+      // Reset angles silently (face-down → face-up) as the eye moves on
+      // The word is now visually flat.  We'll reset angles in next phase.
+      await wait(120);
+      setAngles([0, 0, 0, 0]);   // snap to face-up (invisible transition while still)
 
-        setPhase("stuck");
-        // Stagger 5–8 seconds so each visit feels different
+      // ── SIT 5 seconds ────────────────────────────────────────────────────
+      await wait(5000);
+      if (chk()) return;
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // PHASE 2 — Peel from M → hits E → H → T, flies up, lands new spot
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      await wave([3, 2, 1, 0], -90);
+      if (chk()) return;
+
+      await flyTo(pick());
+      if (chk()) return;
+
+      // ── SIT 8 seconds ────────────────────────────────────────────────────
+      await wait(8000);
+      if (chk()) return;
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ONGOING LOOP — alternating peel directions
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      let turn = 0;
+      while (!chk()) {
+        // Peels alternate: left→right, right→left, left→right, then diagonal
+        const orders: number[][] = [
+          [0, 1, 2, 3],   // left edge peels over to right edge
+          [3, 2, 1, 0],   // right edge peels over to left edge
+          [0, 1, 2, 3],   // left again
+          [1, 0, 2, 3],   // diagonal — starts from inner T side
+          [3, 2, 1, 0],   // right
+          [2, 3, 1, 0],   // diagonal — starts from inner M side
+        ];
+        const order = orders[turn % orders.length];
+
+        // Peel to -90° (lifting off), brief pop at standing, then fly
+        await wave(order, -90);
+        if (chk()) break;
+
+        await wait(200);   // brief "pop" at standing edge
+        if (chk()) break;
+
+        await flyTo(pick());
+        if (chk()) break;
+
+        turn++;
+        // Sit 5–8 s before next peel
         await wait(5000 + Math.random() * 3000);
-        if (cancelRef.current) break;
-
-        // Peel off this spot from a fresh random direction
-        choosePeel();
-        setPhase("pre_peel");
-        await wait(820);
-        if (cancelRef.current) break;
-
-        setPhase("peel_off");
-        await wait(880);
-        if (cancelRef.current) break;
       }
-    };
+    })();
 
-    run();
-    return () => { cancelRef.current = true; };
+    return () => { cancel.current = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Build transform per phase ──
-  const { tilt, dx, dy } = peelRef.current;
-  // Off-screen distance in viewport units — large enough to leave any screen size
-  const OX = dx * 140; // vw
-  const OY = dy * 140; // vh
-
-  let transform: string;
-  switch (phase) {
-    case "title":
-      transform = "rotate(12deg)";
-      break;
-    case "pre_peel":
-      // Edge begins to lift: gentle tilt + very subtle scale suggesting curl
-      transform = `rotate(${tilt}deg) scale(0.97, 0.94)`;
-      break;
-    case "peel_off":
-      // Accelerates off screen in the peel direction with more rotation
-      transform = `rotate(${tilt * 2}deg) translate(${OX}vw, ${OY}vh)`;
-      break;
-    case "offscreen":
-      // Placed at the new (x,y) but translated to the opposite off-screen side
-      // so the entering slide comes from the opposing direction of the last peel
-      transform = `translate(${-OX}vw, ${-OY}vh) rotate(${sticker.rotate}deg) scaleX(${sticker.scaleX}) scaleY(${sticker.scaleY})`;
-      break;
-    case "entering":
-    case "stuck":
-      transform = `rotate(${sticker.rotate}deg) scaleX(${sticker.scaleX}) scaleY(${sticker.scaleY})`;
-      break;
-    default:
-      transform = "none";
-  }
-
-  // ── Build transition per phase ──
-  let transition: string;
-  switch (phase) {
-    case "title":
-    case "offscreen":
-    case "stuck":
-      transition = "none";
-      break;
-    case "pre_peel":
-      transition = "transform 0.82s ease-in-out";
-      break;
-    case "peel_off":
-      transition = "transform 0.88s ease-in";
-      break;
-    case "entering":
-      // Soft bounce as it lands
-      transition = "transform 0.72s cubic-bezier(0.34, 1.56, 0.64, 1)";
-      break;
-    default:
-      transition = "none";
-  }
-
+  // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div
       aria-hidden="true"
       style={{
         position: "fixed",
-        left: sticker.x,
-        top: sticker.y,
+        left: pos.x,
+        top: pos.y,
         zIndex: 9500,
         pointerEvents: "none",
-        fontFamily: "Pacifico, cursive",
-        fontSize: "24px",
-        color: "#f472b6",
-        textShadow: "0 2px 6px rgba(244,114,182,0.8), 0 0 18px rgba(244,114,182,0.4)",
-        transform,
-        transition,
+        // Perspective makes the 3-D letter fold look real
+        perspective: "220px",
+        perspectiveOrigin: "50% 100%",
+        transform: `rotate(${pos.rot}deg)`,
+        transition: moving
+          ? "left 0.55s cubic-bezier(0.34,1.5,0.64,1), top 0.55s cubic-bezier(0.34,1.5,0.64,1)"
+          : "none",
         userSelect: "none",
-        willChange: "transform",
-        whiteSpace: "nowrap",
+        willChange: "transform, left, top",
+        display: "flex",
+        gap: "1px",
       }}
     >
-      Them
+      {L.map((letter, idx) => (
+        <span
+          key={idx}
+          style={{
+            fontFamily: "Pacifico, cursive",
+            fontSize: "24px",
+            color: "#f472b6",
+            textShadow:
+              "0 2px 6px rgba(244,114,182,0.85), 0 0 18px rgba(244,114,182,0.45)",
+            display: "inline-block",
+            // Rotate around the BOTTOM edge so the letter peels up from the surface
+            transformOrigin: "50% 100%",
+            transform: `rotateX(${angles[idx]}deg)`,
+            transition: `transform ${LETTER_MS}ms ease-in-out`,
+            // Keep the letter visible even when it swings past 90° (face-down)
+            backfaceVisibility: "visible",
+            WebkitBackfaceVisibility: "visible",
+          }}
+        >
+          {letter}
+        </span>
+      ))}
     </div>
   );
 }
