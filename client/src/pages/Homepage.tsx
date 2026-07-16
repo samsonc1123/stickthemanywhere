@@ -2,9 +2,13 @@ import { Link, useLocation } from 'wouter';
 import { useRef, useCallback } from 'react';
 import { FloatingThem } from '../components/FloatingThem';
 
+
 export default function HomePage() {
   const [, setLocation] = useLocation();
   
+  // Ref for FloatingThem to measure the title "Them" position
+  const themTitleRef = useRef<HTMLSpanElement>(null);
+
   // Track which words are currently pressed
   const stickPressed = useRef(false);
   const themPressed = useRef(false);
@@ -59,7 +63,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2">
-      <FloatingThem />
+      <FloatingThem titleRef={themTitleRef} />
       {/* Title */}
       <div className="text-center mb-2 landscape:mb-1">
         <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">
@@ -78,8 +82,9 @@ export default function HomePage() {
                 Stick
               </span>
               <span 
+                ref={themTitleRef}
                 className="text-pink-400 text-2xl transform rotate-12 inline-block mx-2 select-none" 
-                style={{ fontFamily: 'Pacifico, cursive' }}
+                style={{ fontFamily: 'Pacifico, cursive', visibility: 'hidden' }}
                 onMouseDown={handleThemStart}
                 onMouseUp={handleThemEnd}
                 onMouseLeave={handleThemEnd}
@@ -118,7 +123,7 @@ export default function HomePage() {
             </span>
             <span 
               className="text-pink-400 text-xl transform rotate-12 inline-block select-none" 
-              style={{ fontFamily: 'Pacifico, cursive' }}
+              style={{ fontFamily: 'Pacifico, cursive', visibility: 'hidden' }}
               onMouseDown={handleThemStart}
               onMouseUp={handleThemEnd}
               onMouseLeave={handleThemEnd}
