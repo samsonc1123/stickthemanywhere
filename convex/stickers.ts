@@ -208,3 +208,16 @@ export const finalizeStickerUpload = mutation({
     };
   },
 });
+
+export const updateStickerName = mutation({
+  args: { code: v.string(), name: v.string() },
+  handler: async (ctx, { code, name }) => {
+    const sticker = await ctx.db
+      .query("stickers")
+      .withIndex("by_code", (q) => q.eq("code", code.toUpperCase()))
+      .unique();
+    if (!sticker) throw new Error(`Sticker "${code}" not found`);
+    await ctx.db.patch(sticker._id, { name, updatedAt: Date.now() });
+    return { updated: true, code: sticker.code, name };
+  },
+});
