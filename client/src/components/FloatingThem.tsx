@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 
 // ── TIMING ────────────────────────────────────────────────────────────────────
-const STEP_MS   = 165;   // delay between each letter starting its peel
-const LETTER_MS = 400;   // each letter's rotation duration
-const WAVE_DONE = (n: number) => (n - 1) * STEP_MS + LETTER_MS + 30;
+// Tight stagger + long duration = letters heavily overlap → feels like a rolling wave
+// not a "file" snap.  Each letter runs the FULL 0→-180 arc in one smooth sweep.
+const STEP_MS   = 180;   // gap between each letter starting
+const LETTER_MS = 1100;  // each letter's full-arc duration (slow, organic)
+const WAVE_DONE = (n: number) => (n - 1) * STEP_MS + LETTER_MS + 40;
 
 // ── POSITIONS ─────────────────────────────────────────────────────────────────
 interface Pos { x: number; y: number; rot: number; }
@@ -79,26 +81,18 @@ export function FloatingThem({ titleRef }: Props) {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // PHASE 1 — Peel from T rolling to M, stand on M, fall flat
+      //
+      // ONE continuous arc: each letter goes 0° → -180° with stagger.
+      // No intermediate stop.  The "stands on M" moment emerges naturally:
+      // when m hits -90° (standing), T/h/e have already rolled flat on the
+      // other side — just like a real sticker balanced on its last corner.
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      // Step A: T(0) → h(1) → e(2) → m(3) each peel to -90° (standing)
-      //         By the time m reaches -90° the word is "standing on its M"
-      await wave([0, 1, 2, 3], -90);
+      await wave([0, 1, 2, 3], -180);
       if (chk()) return;
 
-      // Dramatic pause — word balanced upright on M
-      await wait(380);
-      if (chk()) return;
-
-      // Step B: Falls flat — M side drops first (3→0), letters return to 0°
-      //         (they complete the arc and land flat on the other side)
-      await wave([3, 2, 1, 0], -180);
-      if (chk()) return;
-
-      // Reset angles silently (face-down → face-up) as the eye moves on
-      // The word is now visually flat.  We'll reset angles in next phase.
-      await wait(120);
-      setAngles([0, 0, 0, 0]);   // snap to face-up (invisible transition while still)
+      // Brief rest at flat-face-down before resetting
+      await wait(300);
+      setAngles([0, 0, 0, 0]);   // invisible snap back to face-up while still
 
       // ── SIT 5 seconds ────────────────────────────────────────────────────
       await wait(5000);
@@ -189,7 +183,8 @@ export function FloatingThem({ titleRef }: Props) {
             // This creates a horizontal roll T→h→e→m, not a vertical domino flip
             transformOrigin: "100% 50%",
             transform: `rotateY(${angles[idx]}deg)`,
-            transition: `transform ${LETTER_MS}ms ease-in-out`,
+            // Slow start (corner barely lifts), accelerates like a real sticker curl
+            transition: `transform ${LETTER_MS}ms cubic-bezier(0.35, 0, 0.65, 1)`,
             // Keep the letter visible even when it swings past 90° (face-down)
             backfaceVisibility: "visible",
             WebkitBackfaceVisibility: "visible",
