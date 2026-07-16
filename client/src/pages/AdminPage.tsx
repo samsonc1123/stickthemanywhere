@@ -123,7 +123,7 @@ export default function AdminPage() {
       {isAuthenticated && !panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}
-          className="fixed top-4 right-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 border border-green-500/40 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest text-green-400 hover:border-green-400 transition-colors"
+          className="fixed top-4 left-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 border border-green-500/40 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest text-green-400 hover:border-green-400 transition-colors"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           Admin
