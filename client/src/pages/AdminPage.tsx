@@ -129,7 +129,7 @@ export default function AdminPage() {
       {!panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}
-          className={`fixed top-4 left-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest transition-colors ${
+          className={`fixed bottom-4 right-4 z-[20000] flex items-center gap-2 px-3 py-1.5 bg-black/80 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest transition-colors ${
             isAuthenticated
               ? "border border-green-500/40 text-green-400 hover:border-green-400"
               : "border border-gray-600/40 text-gray-500 hover:border-gray-400"
