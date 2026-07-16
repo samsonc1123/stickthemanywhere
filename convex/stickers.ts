@@ -1,6 +1,36 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Derives a 3-character uppercase abbreviation from a character name.
+ * "Chewbacca"                  → CHE
+ * "Darth Vader"                → DVA
+ * "Luke Skywalker"             → LSU
+ * "Din Djarin (The Mandalorian)" → DDI
+ * "R2-D2"                      → R2D
+ */
+function charAbbrev(name: string): string {
+  // Strip parenthetical content, hyphens-as-separators → spaces, collapse whitespace
+  const clean = name
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/-/g, " ")
+    .trim()
+    .toUpperCase();
+
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "XXX";
+
+  const initials = words.map((w) => w[0]).join("");
+  if (initials.length >= 3) return initials.slice(0, 3);
+
+  // Pad with extra letters from the first word
+  return (initials + words[0].slice(1)).slice(0, 3).padEnd(3, "X");
+}
+
+// ─── Queries ─────────────────────────────────────────────────────────────────
+
 export const getStickersByGroupCode = query({
   args: {
     groupCode: v.string(),
@@ -70,16 +100,6 @@ export const getStickersBySubcategory = query({
   },
 });
 
-export const updateSortOrders = mutation({
-  args: { updates: v.array(v.object({ id: v.id("stickers"), sortOrder: v.number() })) },
-  handler: async (ctx, { updates }) => {
-    for (const { id, sortOrder } of updates) {
-      await ctx.db.patch(id, { sortOrder, updatedAt: Date.now() });
-    }
-    return { updated: updates.length };
-  },
-});
-
 export const listAllStickers = query({
   args: {},
   handler: async (ctx) => {
@@ -116,6 +136,29 @@ export const getStickersByCategory = query({
   },
 });
 
+// ─── Mutations ────────────────────────────────────────────────────────────────
+
+export const updateSortOrders = mutation({
+  args: { updates: v.array(v.object({ id: v.id("stickers"), sortOrder: v.number() })) },
+  handler: async (ctx, { updates }) => {
+    for (const { id, sortOrder } of updates) {
+      await ctx.db.patch(id, { sortOrder, updatedAt: Date.now() });
+    }
+    return { updated: updates.length };
+  },
+});
+
+/**
+ * finalizeStickerUpload
+ *
+ * Code format: {SUBCAT}-{CHAR}-{NNNNN}
+ * e.g. MOV-STW-CHE-00001  (Star Wars → Chewbacca sticker #1)
+ *      MOV-STW-DVA-00001  (Star Wars → Darth Vader sticker #1)
+ *      MOV-STW-DVA-00002  (Star Wars → Darth Vader sticker #2)
+ *
+ * The character abbreviation is derived from the part after " - " in `name`.
+ * If no " - " separator exists, falls back to the full name for abbrev generation.
+ */
 export const finalizeStickerUpload = mutation({
   args: {
     storageId: v.id("_storage"),
@@ -156,29 +199,34 @@ export const finalizeStickerUpload = mutation({
       };
     }
 
-    // 3 — Generate sequential code
-    // Use by_subcategory index — O(k) not O(n), collision-safe by construction
-    const prefix = subcat.code;
+    // 3 — Derive character abbreviation from the name
+    // Name format: "Star Wars - Darth Vader"  →  character part = "Darth Vader"
+    const separatorIdx = args.name.indexOf(" - ");
+    const characterPart =
+      separatorIdx !== -1 ? args.name.slice(separatorIdx + 3) : args.name;
+    const abbrev = charAbbrev(characterPart); // e.g. "DVA"
+
+    // 4 — Generate sequential code scoped to this character
+    // Prefix: MOV-STW-DVA  →  look for MOV-STW-DVA-NNNNN
+    const charPrefix = `${subcat.code}-${abbrev}`;
 
     const subcatStickers = await ctx.db
       .query("stickers")
       .withIndex("by_subcategory", (q) => q.eq("subcategoryCode", subcategoryCode))
       .collect();
 
+    // Find the max number for this specific character prefix
     const maxNum = subcatStickers.reduce((max, s) => {
-      // Code format: PREFIX-NNNNN (e.g. FLO-ROS-00042)
-      // Strip "PREFIX-" to isolate the numeric suffix
-      const suffix = s.code.startsWith(prefix + "-")
-        ? s.code.slice(prefix.length + 1)
-        : s.code.slice(prefix.length);
+      if (!s.code.startsWith(charPrefix + "-")) return max;
+      const suffix = s.code.slice(charPrefix.length + 1); // after the last "-"
       const num = parseInt(suffix, 10);
       return Number.isFinite(num) && num > max ? num : max;
     }, 0);
 
     const nextNum = maxNum + 1;
-    const code = `${prefix}-${String(nextNum).padStart(5, "0")}`;
+    const code = `${charPrefix}-${String(nextNum).padStart(5, "0")}`;
 
-    // 4 — Final uniqueness check
+    // 5 — Final uniqueness check
     const dupe = await ctx.db
       .query("stickers")
       .withIndex("by_code", (q) => q.eq("code", code))
@@ -188,7 +236,7 @@ export const finalizeStickerUpload = mutation({
       throw new Error(`Sticker code ${code} already exists. Please retry.`);
     }
 
-    // 5 — Authoritative category
+    // 6 — Authoritative category
     const derivedCategoryCode = subcat.categoryCode;
 
     const now = Date.now();
@@ -225,5 +273,57 @@ export const updateStickerName = mutation({
     if (!sticker) throw new Error(`Sticker "${code}" not found`);
     await ctx.db.patch(sticker._id, { name, updatedAt: Date.now() });
     return { updated: true, code: sticker.code, name };
+  },
+});
+
+/**
+ * fixStickerCodeAndName
+ *
+ * One-time correction tool: renames both the sticker code and display name,
+ * and patches any stickerGroupLinks that reference the old code.
+ */
+export const fixStickerCodeAndName = mutation({
+  args: {
+    oldCode: v.string(),
+    newCode: v.string(),
+    newName: v.string(),
+  },
+  handler: async (ctx, { oldCode, newCode, newName }) => {
+    const OLD = oldCode.toUpperCase();
+    const NEW = newCode.toUpperCase();
+
+    const sticker = await ctx.db
+      .query("stickers")
+      .withIndex("by_code", (q) => q.eq("code", OLD))
+      .unique();
+
+    if (!sticker) throw new Error(`Sticker "${OLD}" not found`);
+
+    // Check new code doesn't already exist (unless it's the same record)
+    if (NEW !== OLD) {
+      const conflict = await ctx.db
+        .query("stickers")
+        .withIndex("by_code", (q) => q.eq("code", NEW))
+        .unique();
+      if (conflict) throw new Error(`Code "${NEW}" already exists`);
+    }
+
+    await ctx.db.patch(sticker._id, {
+      code: NEW,
+      name: newName,
+      updatedAt: Date.now(),
+    });
+
+    // Patch any group links referencing the old code
+    const links = await ctx.db
+      .query("stickerGroupLinks")
+      .filter((q) => q.eq(q.field("stickerCode"), OLD))
+      .collect();
+
+    for (const link of links) {
+      await ctx.db.patch(link._id, { stickerCode: NEW });
+    }
+
+    return { updated: true, oldCode: OLD, newCode: NEW, newName, linksPatched: links.length };
   },
 });
