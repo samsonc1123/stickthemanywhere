@@ -1,0 +1,1 @@
+- [Trip page protected](trip-page-protected.md) — TripPage has special psychedelic design + triple-tap admin backdoor; NEVER modify it unless explicitly asked.
