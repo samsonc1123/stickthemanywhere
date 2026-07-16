@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -20,7 +20,6 @@ const SUBCATEGORIES = [
 const GOLD = "#c3a343";
 
 export default function FashionPage() {
-  const [glowCode, setGlowCode] = useState<string | null>(null);
   const [activeCode, setActiveCode] = useState<string | null>(null);
 
   const stickersBySubcat = useQuery(api.stickers.getStickersByCategory, { categoryCode: "FASHION" }) ?? {};
@@ -30,19 +29,6 @@ export default function FashionPage() {
     ? SUBCATEGORIES.filter((s) => s.code === activeCode)
     : SUBCATEGORIES;
 
-  useEffect(() => {
-    if (activeCode) return;
-    let idx = 0;
-    const cycle = () => {
-      const subcatsWithStickers = SUBCATEGORIES.filter(s => (stickersBySubcat[s.code] ?? []).length > 0);
-      const pool = subcatsWithStickers.length > 0 ? subcatsWithStickers : SUBCATEGORIES;
-      setGlowCode(pool[idx % pool.length].code);
-      idx++;
-    };
-    cycle();
-    const id = setInterval(cycle, 2200);
-    return () => clearInterval(id);
-  }, [activeCode, stickersBySubcat]);
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
@@ -88,10 +74,8 @@ export default function FashionPage() {
               >←</button>
             </Link>
             {SUBCATEGORIES.map((sub) => {
-              const count = (stickersBySubcat[sub.code] ?? []).length;
               const isActive = activeCode === sub.code;
-              const isGlowing = !activeCode && glowCode === sub.code;
-              const lit = isActive || isGlowing;
+              const lit = isActive;
               return (
                 <button
                   key={sub.code}
@@ -106,14 +90,6 @@ export default function FashionPage() {
                   }}
                 >
                   {sub.name}
-                  {count > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center"
-                      style={{ backgroundColor: "#ff00ff", color: "white" }}
-                    >
-                      {count}
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -137,17 +113,15 @@ export default function FashionPage() {
                 ))
               : displayed.map((sub) => {
                   const stickers = stickersBySubcat[sub.code] ?? [];
-                  const isGlowing = !activeCode && glowCode === sub.code;
-                  const isSelected = activeCode === sub.code;
-                  const lit = isGlowing || isSelected;
+                  const lit = activeCode === sub.code;
                   return (
                     <div
                       key={sub.code}
                       className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 overflow-hidden relative"
                       style={{
-                        borderColor: lit ? GOLD : "#374151",
-                        boxShadow: lit ? `0 0 10px ${GOLD}, 0 0 20px ${GOLD}55, inset 0 0 10px ${GOLD}22` : "none",
-                        transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+                        borderColor: GOLD,
+                        boxShadow: lit ? `0 0 12px ${GOLD}, 0 0 24px ${GOLD}55, inset 0 0 10px ${GOLD}22` : `0 0 5px ${GOLD}44`,
+                        transition: "box-shadow 0.4s ease",
                       }}
                     >
                       {stickers.length > 0 ? (
