@@ -66,7 +66,7 @@ function pickRandom(): StickerState {
 }
 
 interface Props {
-  titleRef: React.RefObject<HTMLSpanElement>;
+  titleRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
 export function FloatingThem({ titleRef }: Props) {
@@ -80,7 +80,7 @@ export function FloatingThem({ titleRef }: Props) {
     const run = async () => {
       // ── Step 1: Measure title "Them" and snap FloatingThem on top of it ──
       await wait(200); // let layout paint
-      const el = titleRef.current;
+      const el = titleRef?.current ?? null;
       let tx = window.innerWidth / 2 - 28;
       let ty = 22;
       let tSize = 24;

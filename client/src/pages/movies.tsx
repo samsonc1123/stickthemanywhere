@@ -1,11 +1,10 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import "../styles/HomePage.css";
 
 export default function MoviesPage() {
-  const [activeCode, setActiveCode] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
 
   const subcategories = useQuery(
     api.subcategories.getSubcategoriesByCategory,
@@ -23,12 +22,11 @@ export default function MoviesPage() {
     a.name.localeCompare(b.name)
   );
 
-  const displayed = activeCode
-    ? sorted.filter((s) => s.code === activeCode)
-    : sorted;
+  const navigate = (code: string) => setLocation(`/movies/${code}`);
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
+
       {/* Title */}
       <div className="text-center mb-2 landscape:mb-1">
         <Link href="/">
@@ -54,7 +52,7 @@ export default function MoviesPage() {
         <h1 className="font-bold text-yellow-400 animate-categoriesFlicker font-audiowide text-lg">Movies</h1>
       </div>
 
-      {/* Subcategory pill buttons */}
+      {/* Franchise pill nav bar */}
       <div
         className="overflow-x-scroll overflow-y-hidden whitespace-nowrap px-4 py-2 w-full mb-2 landscape:mb-1 auto-hide-scrollbar"
         style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x" }}
@@ -72,60 +70,48 @@ export default function MoviesPage() {
           {isLoading ? (
             <span className="text-gray-500 animate-pulse px-4 py-2 inline-block">Loading…</span>
           ) : (
-            <>
-              {activeCode && (
-                <button
-                  onClick={() => setActiveCode(null)}
-                  className="inline-block rounded-full bg-gray-700 border border-gray-500 px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform text-sm text-white"
-                >
-                  All
-                </button>
-              )}
-              {sorted.map((sub) => (
-                <button
-                  key={sub.code}
-                  onClick={() => setActiveCode(activeCode === sub.code ? null : sub.code)}
-                  className="inline-block rounded-full px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform"
-                  style={{
-                    backgroundColor: activeCode === sub.code ? "#facc15" : "#00ffff",
-                    color: "black",
-                    fontWeight: activeCode === sub.code ? 700 : 400,
-                  }}
-                >
-                  {sub.name}
-                </button>
-              ))}
-            </>
+            sorted.map((sub) => (
+              <button
+                key={sub.code}
+                onClick={() => navigate(sub.code)}
+                className="inline-block rounded-full px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform"
+                style={{ backgroundColor: "#00ffff", color: "black" }}
+              >
+                {sub.name}
+              </button>
+            ))
           )}
         </div>
       </div>
 
-      {/* Sticker grid */}
+      {/* Franchise boxes — each is a clickable link */}
       <div className="w-full">
         <div className="flex justify-center pb-4 landscape:pb-16">
           <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 max-w-lg landscape:max-w-4xl md:max-w-2xl md:landscape:max-w-6xl px-4">
+
             {isLoading ? (
               <div className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center">
                 <span className="text-gray-500 animate-pulse text-sm">Loading…</span>
               </div>
-            ) : displayed.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <div className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center">
-                <span className="text-gray-500 text-sm text-center px-2">No movies yet</span>
+                <span className="text-gray-500 text-sm">No movies yet</span>
               </div>
             ) : (
-              displayed.map((sub) => {
-                const stickers: any[] = (stickersByCode as any)[sub.code] ?? [];
+              sorted.map((sub) => {
+                const previewStickers: any[] = (stickersByCode as any)[sub.code] ?? [];
                 return (
-                  <div
+                  <button
                     key={sub.code}
-                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center overflow-hidden relative"
+                    onClick={() => navigate(sub.code)}
+                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center overflow-hidden relative hover:border-yellow-400 hover:scale-[1.02] transition-all cursor-pointer"
                   >
-                    {stickers.length > 0 ? (
+                    {previewStickers.length > 0 ? (
                       <div
                         className="flex h-full gap-2 overflow-x-auto w-full items-center px-2"
-                        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth" }}
+                        style={{ WebkitOverflowScrolling: "touch" }}
                       >
-                        {stickers.map((sticker, j) => (
+                        {previewStickers.slice(0, 3).map((sticker, j) => (
                           <div key={j} className="flex-shrink-0 h-full flex items-center justify-center">
                             <img
                               src={sticker.imageUrl ?? ""}
@@ -142,7 +128,7 @@ export default function MoviesPage() {
                         <span className="text-gray-600 text-[9px] font-mono uppercase tracking-wider">{sub.code}</span>
                       </div>
                     )}
-                  </div>
+                  </button>
                 );
               })
             )}

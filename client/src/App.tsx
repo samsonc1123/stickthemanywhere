@@ -37,6 +37,7 @@ import PokemonLegendaryStickersPage from './pages/PokemonLegendaryStickersPage';
 import HelloKittyPage from './pages/HelloKittyPage';
 import CarsPage from './pages/cars';
 import MoviesPage from './pages/movies';
+import MovieFranchisePage from './pages/MovieFranchisePage';
 import AnimatedSeriesPage from './pages/animatedseries';
 import FoodDrinkPage from './pages/FoodDrinkPage';
 import TripPage from './pages/TripPage';
@@ -86,6 +87,7 @@ function Router() {
       <Route path="/hellokitty" component={HelloKittyPage} />
       <Route path="/cars" component={CarsPage} />
       <Route path="/movies" component={MoviesPage} />
+      <Route path="/movies/:franchiseCode" component={MovieFranchisePage} />
       <Route path="/animatedseries" component={AnimatedSeriesPage} />
       <Route path="/food-drink" component={FoodDrinkPage} />
       <Route path="/trip" component={TripPage} />

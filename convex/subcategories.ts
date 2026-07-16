@@ -1,6 +1,29 @@
 // convex/subcategories.ts
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+
+export const deleteSubcategoryByCode = mutation({
+  args: { code: v.string() },
+  handler: async (ctx, { code }) => {
+    const rows = await ctx.db
+      .query("subcategories")
+      .withIndex("by_code", (q) => q.eq("code", code.toUpperCase()))
+      .collect();
+    for (const row of rows) await ctx.db.delete(row._id);
+    return { deleted: rows.length };
+  },
+});
+
+export const getSubcategoryByCode = query({
+  args: { code: v.string() },
+  handler: async (ctx, { code }) => {
+    const results = await ctx.db
+      .query("subcategories")
+      .withIndex("by_code", (q) => q.eq("code", code.toUpperCase()))
+      .first();
+    return results ?? null;
+  },
+});
 
 export const getAllSubcategories = query({
   handler: async (ctx) => {
