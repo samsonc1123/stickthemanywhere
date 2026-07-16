@@ -59,15 +59,11 @@ export default function MovieFranchisePage() {
 
   const displayed = activeChar ? roster.filter((c) => c === activeChar) : roster;
 
-  // One box per sticker; coming-soon chars get one placeholder
-  const boxes: Array<{ char: string; sticker: any | null; key: string }> = [];
+  // ONE box per character — multiple stickers scroll horizontally inside it
+  const boxes: Array<{ char: string; stickers: any[]; key: string }> = [];
   for (const char of displayed) {
     const charStickers = stickersByCharacter[char] ?? [];
-    if (charStickers.length > 0) {
-      for (const s of charStickers) boxes.push({ char, sticker: s, key: s.code });
-    } else {
-      boxes.push({ char, sticker: null, key: `ph-${char}` });
-    }
+    boxes.push({ char, stickers: charStickers, key: char });
   }
 
   return (
@@ -178,35 +174,57 @@ export default function MovieFranchisePage() {
                 </div>
               ))
             ) : (
-              boxes.map(({ char, sticker, key }) => {
+              boxes.map(({ char, stickers, key }) => {
                 const isGlowing = !activeChar && glowChar === char;
                 const isSelected = activeChar === char;
                 const lit = isGlowing || isSelected;
+                const hasStickers = stickers.length > 0;
                 return (
                   <div
                     key={key}
-                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 flex items-center justify-center overflow-hidden relative"
+                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 overflow-hidden relative"
                     style={{
                       borderColor: lit ? "#00ffff" : "#374151",
                       boxShadow: lit ? "0 0 10px #00ffff, 0 0 20px #00ffff55, inset 0 0 10px #00ffff22" : "none",
                       transition: "border-color 0.4s ease, box-shadow 0.4s ease",
                     }}
                   >
-                    {sticker?.imageUrl ? (
-                      <img
-                        src={sticker.imageUrl}
-                        alt={sticker.name}
-                        style={{
-                          position: "absolute",
-                          inset: "10px",
-                          width: "calc(100% - 20px)",
-                          height: "calc(100% - 20px)",
-                          objectFit: "contain",
-                        }}
-                        loading="lazy"
-                      />
+                    {hasStickers ? (
+                      /* Horizontal slide strip — swipe right-to-left to browse stickers */
+                      <div
+                        className="flex h-full overflow-x-auto snap-x snap-mandatory auto-hide-scrollbar"
+                        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth" }}
+                      >
+                        {stickers.map((s) => (
+                          <div
+                            key={s.code}
+                            className="flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 snap-start relative"
+                          >
+                            <img
+                              src={s.imageUrl}
+                              alt={s.name}
+                              style={{
+                                position: "absolute",
+                                inset: "10px",
+                                width: "calc(100% - 20px)",
+                                height: "calc(100% - 20px)",
+                                objectFit: "contain",
+                              }}
+                              loading="lazy"
+                            />
+                            {stickers.length > 1 && (
+                              <span
+                                className="absolute bottom-1 right-2 text-[8px] font-mono"
+                                style={{ color: lit ? "#00ffff88" : "#374151" }}
+                              >
+                                {stickers.indexOf(s) + 1}/{stickers.length}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 w-full h-full px-3 text-center">
                         <span
                           className="text-xs font-montserrat font-bold leading-tight"
                           style={{ color: lit ? "#00ffff" : "#4b5563" }}
