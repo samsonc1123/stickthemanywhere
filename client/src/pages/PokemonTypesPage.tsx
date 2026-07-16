@@ -142,43 +142,59 @@ export default function PokemonTypesPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 max-w-lg landscape:max-w-4xl md:max-w-2xl md:landscape:max-w-6xl px-4">
-        {!isLoading &&
-          typeGroups.map((g) => {
-            const typeKey = slugType(g.name);
-            const color = TYPE_COLORS[typeKey] || "#555";
-            const count = (counts as any)?.[g.code] ?? 0;
-
-            return (
-              <Link key={g.code} href={`/pokemon/type/${typeKey}`}>
+      <div className="w-full">
+        <div className="flex justify-center pb-4 landscape:pb-16">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-lg landscape:max-w-4xl px-4">
+            {isLoading ? (
+              <div className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center">
+                <span className="text-gray-500 animate-pulse">Loading...</span>
+              </div>
+            ) : typeGroups.length === 0 ? (
+              Object.keys(TYPE_COLORS).map((typeKey) => (
                 <div
-                  className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform relative group bg-black/40 overflow-hidden"
-                  style={{ borderColor: color }}
+                  key={typeKey}
+                  className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 flex flex-col items-center justify-center"
+                  style={{ borderColor: TYPE_COLORS[typeKey] }}
                 >
-                  <div className="text-center w-full px-2 z-10">
-                    <span
-                      className="text-xs font-audiowide uppercase tracking-widest"
-                      style={{ color }}
-                    >
-                      {g.name}
-                    </span>
-
-                    <div className="mt-2 text-[10px] opacity-40 uppercase font-bold">
-                      {count > 0 ? `${count} sticker${count === 1 ? "" : "s"}` : "No stickers yet"}
-                    </div>
-                  </div>
+                  <span
+                    className="text-xs font-audiowide uppercase tracking-widest capitalize"
+                    style={{ color: TYPE_COLORS[typeKey] }}
+                  >
+                    {typeKey}
+                  </span>
+                  <span className="text-[10px] text-gray-600 mt-1 uppercase font-bold">
+                    POK-TYP
+                  </span>
                 </div>
-              </Link>
-            );
-          })}
-      </div>
+              ))
+            ) : (
+              typeGroups.map((g) => {
+                const typeKey = slugType(g.name);
+                const color = TYPE_COLORS[typeKey] || "#facc15";
+                const count = (counts as any)?.[g.code] ?? 0;
 
-      <div className="mt-12">
-        <Link href="/pokemon">
-          <button className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-2 rounded-full font-montserrat uppercase tracking-widest border border-white/20 transition-all">
-            Back to Pokemon
-          </button>
-        </Link>
+                return (
+                  <Link key={g.code} href={`/pokemon/type/${typeKey}`}>
+                    <div
+                      className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform bg-black/40 overflow-hidden"
+                      style={{ borderColor: color }}
+                    >
+                      <span
+                        className="text-xs font-audiowide uppercase tracking-widest"
+                        style={{ color }}
+                      >
+                        {g.name}
+                      </span>
+                      <div className="mt-2 text-[10px] opacity-40 uppercase font-bold">
+                        {count > 0 ? `${count} sticker${count === 1 ? "" : "s"}` : "No stickers yet"}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -72,7 +72,7 @@ export default function DragonsPage() {
 
       <div className="w-full">
         <div className="flex justify-center pb-4 landscape:pb-16">
-          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-md landscape:max-w-4xl px-4">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-lg landscape:max-w-4xl px-4">
             {isLoading ? (
               <div className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 border-red-600 flex items-center justify-center">
                 <span className="text-red-400 animate-pulse">Loading...</span>

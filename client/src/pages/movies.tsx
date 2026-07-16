@@ -78,7 +78,7 @@ export default function MoviesPage() {
       {/* Stickers Vertical Grid */}
       <div className="w-full">
         <div className="flex justify-center pb-4 landscape:pb-16">
-          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-md landscape:max-w-4xl px-4">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-lg landscape:max-w-4xl px-4">
             {subcategories.map((subcat, i) => (
               <div
                 key={i}

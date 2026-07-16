@@ -10,6 +10,26 @@ const SUBCATEGORY_CONFIG: Record<string, { title: string; parentCode: string }> 
   'legendaries': { title: 'Legendaries', parentCode: 'POK-LGD' },
 };
 
+const PLACEHOLDER_ITEMS: Record<string, Array<{ name: string; color: string; code: string }>> = {
+  'POK-GEN': [
+    { name: 'Gen 1', color: '#facc15', code: 'GEN-01' },
+    { name: 'Gen 2', color: '#facc15', code: 'GEN-02' },
+    { name: 'Gen 3', color: '#facc15', code: 'GEN-03' },
+    { name: 'Gen 4', color: '#facc15', code: 'GEN-04' },
+    { name: 'Gen 5', color: '#facc15', code: 'GEN-05' },
+    { name: 'Gen 6', color: '#facc15', code: 'GEN-06' },
+    { name: 'Gen 7', color: '#facc15', code: 'GEN-07' },
+    { name: 'Gen 8', color: '#facc15', code: 'GEN-08' },
+    { name: 'Gen 9', color: '#facc15', code: 'GEN-09' },
+  ],
+  'POK-LGD': [
+    { name: 'Legendary', color: '#facc15', code: 'LEGENDARY' },
+    { name: 'Mythical', color: '#c084fc', code: 'MYTHICAL' },
+    { name: 'Ultra Beast', color: '#67e8f9', code: 'ULTRA-BEAST' },
+  ],
+  'POK-TYP': [],
+};
+
 export default function PokemonSubcategoryPage() {
   const params = useParams<{ subcategory: string }>();
   const subcategoryKey = params.subcategory?.toLowerCase() || '';
@@ -158,22 +178,40 @@ export default function PokemonSubcategoryPage() {
 
       <div className="w-full">
         <div className="flex justify-center pb-4 landscape:pb-16">
-          <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 max-w-lg landscape:max-w-4xl md:max-w-2xl md:landscape:max-w-6xl px-4">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-lg landscape:max-w-4xl px-4">
             {isLoading ? (
-              <div className="w-40 h-40 border-4 neon-border-cyan flex items-center justify-center">
+              <div className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center">
                 <span className="text-gray-500 animate-pulse">Loading...</span>
               </div>
             ) : groups.length === 0 ? (
-              <div className="w-40 h-40 border-4 neon-border-cyan flex items-center justify-center">
-                <span className="text-gray-500 text-sm text-center px-2">No items found</span>
-              </div>
+              (PLACEHOLDER_ITEMS[config.parentCode] ?? []).length > 0 ? (
+                (PLACEHOLDER_ITEMS[config.parentCode]).map((item) => (
+                  <div
+                    key={item.code}
+                    className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 flex flex-col items-center justify-center"
+                    style={{ borderColor: item.color }}
+                  >
+                    <span className="text-xs font-audiowide uppercase tracking-widest" style={{ color: item.color }}>
+                      {item.name}
+                    </span>
+                    <span className="text-[10px] text-gray-600 mt-1 uppercase font-bold">
+                      {item.code}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center">
+                  <span className="text-gray-500 text-sm text-center px-2">No items found</span>
+                </div>
+              )
             ) : (
               groups.map((group: any) => (
                 <Link key={group.code} href={getLinkHref(group)}>
-                  <div className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                  <div
+                    className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
                     style={{ borderColor: getBackgroundColor(group.name) }}
                   >
-                    <span className="text-gray-400 text-lg font-montserrat">{group.name}</span>
+                    <span className="text-gray-400 text-sm font-montserrat text-center px-2">{group.name}</span>
                   </div>
                 </Link>
               ))
