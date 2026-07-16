@@ -90,6 +90,26 @@ export const listAllStickers = query({
   },
 });
 
+export const getStickersByCategory = query({
+  args: { categoryCode: v.string() },
+  handler: async (ctx, { categoryCode }) => {
+    const stickers = await ctx.db
+      .query("stickers")
+      .withIndex("by_category", (q) => q.eq("categoryCode", categoryCode.toUpperCase()))
+      .collect();
+
+    const results: Record<string, any[]> = {};
+    for (const s of stickers) {
+      if (!s.isActive) continue;
+      const key = s.subcategoryCode ?? "UNKNOWN";
+      if (!results[key]) results[key] = [];
+      const imageUrl = s.storageId ? await ctx.storage.getUrl(s.storageId) : null;
+      results[key].push({ ...s, imageUrl });
+    }
+    return results;
+  },
+});
+
 export const finalizeStickerUpload = mutation({
   args: {
     storageId: v.id("_storage"),

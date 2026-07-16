@@ -245,50 +245,73 @@ const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrd
   { categoryCode: "TRUMP", code: "AMF", name: "America First",sortOrder: 5 },
   { categoryCode: "TRUMP", code: "REP", name: "Republican", sortOrder: 6 },
 
+  // ANIME
+  { categoryCode: "ANIME", code: "NAR",  name: "Naruto",               sortOrder: 1 },
+  { categoryCode: "ANIME", code: "DBZ",  name: "Dragon Ball Z",        sortOrder: 2 },
+  { categoryCode: "ANIME", code: "OPP",  name: "One Piece",            sortOrder: 3 },
+  { categoryCode: "ANIME", code: "AOT",  name: "Attack on Titan",      sortOrder: 4 },
+  { categoryCode: "ANIME", code: "DMS",  name: "Demon Slayer",         sortOrder: 5 },
+  { categoryCode: "ANIME", code: "MHA",  name: "My Hero Academia",     sortOrder: 6 },
+  { categoryCode: "ANIME", code: "JJA",  name: "JoJo's Bizarre",       sortOrder: 7 },
+  { categoryCode: "ANIME", code: "DTN",  name: "Death Note",           sortOrder: 8 },
+  { categoryCode: "ANIME", code: "BLC",  name: "Bleach",               sortOrder: 9 },
+  { categoryCode: "ANIME", code: "SAI",  name: "Sailor Moon",          sortOrder: 10 },
+  { categoryCode: "ANIME", code: "SPY",  name: "Spy x Family",         sortOrder: 11 },
+  { categoryCode: "ANIME", code: "CHN",  name: "Chainsaw Man",         sortOrder: 12 },
+
   // UNICORNS
   { categoryCode: "UNICORNS", code: "UNI", name: "Unicorns", sortOrder: 1 },
 ];
 
 export const ensureTaxonomySeeded = mutation({
   handler: async (ctx) => {
-    const firstCat = await ctx.db.query("categories").first();
-    if (firstCat) {
-      return { seeded: false, message: "Already seeded" };
-    }
-
     const now = Date.now();
     let catsAdded = 0;
     let subsAdded = 0;
 
     for (const cat of CATEGORIES) {
-      await ctx.db.insert("categories", {
-        code: cat.code,
-        name: cat.name,
-        icon: cat.icon,
-        isActive: true,
-        sortOrder: cat.sortOrder,
-        createdAt: now,
-        updatedAt: now,
-      });
-      catsAdded++;
+      const existing = await ctx.db
+        .query("categories")
+        .withIndex("by_code", (q) => q.eq("code", cat.code))
+        .first();
+      if (!existing) {
+        await ctx.db.insert("categories", {
+          code: cat.code,
+          name: cat.name,
+          icon: cat.icon,
+          isActive: true,
+          sortOrder: cat.sortOrder,
+          createdAt: now,
+          updatedAt: now,
+        });
+        catsAdded++;
+      }
     }
 
     for (const sub of SUBCATEGORIES) {
-      await ctx.db.insert("subcategories", {
-        categoryCode: sub.categoryCode,
-        code: sub.code,
-        name: sub.name,
-        isActive: true,
-        sortOrder: sub.sortOrder,
-        createdAt: now,
-        updatedAt: now,
-      });
-      subsAdded++;
+      const existing = await ctx.db
+        .query("subcategories")
+        .withIndex("by_code", (q) => q.eq("code", sub.code))
+        .first();
+      if (!existing) {
+        await ctx.db.insert("subcategories", {
+          categoryCode: sub.categoryCode,
+          code: sub.code,
+          name: sub.name,
+          isActive: true,
+          sortOrder: sub.sortOrder,
+          createdAt: now,
+          updatedAt: now,
+        });
+        subsAdded++;
+      }
     }
 
     return {
-      seeded: true,
-      message: `Initialized ${catsAdded} categories and ${subsAdded} subcategories`,
+      seeded: catsAdded > 0 || subsAdded > 0,
+      message: catsAdded === 0 && subsAdded === 0
+        ? "Already up to date"
+        : `Added ${catsAdded} categories and ${subsAdded} subcategories`,
     };
   },
 });

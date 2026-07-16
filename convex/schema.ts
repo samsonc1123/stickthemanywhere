@@ -75,6 +75,11 @@ export default defineSchema({
     categoryCode: v.optional(v.string()),
     subcategoryCode: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
+    // Multi-dimensional tagging: array of group codes (e.g. ["FIRE","GEN-01","LEGENDARY"])
+    // Resolved via stickerGroupLinks for relational queries; denormalized here for fast client filtering
+    tags: v.optional(v.array(v.string())),
+    // Flexible per-sticker metadata (Pokémon: primary_type, secondary_type, generation, legendary_tier)
+    metadata: v.optional(v.any()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
