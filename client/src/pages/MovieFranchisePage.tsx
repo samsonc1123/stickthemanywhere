@@ -33,16 +33,15 @@ export default function MovieFranchisePage() {
     ? [...FRANCHISE_CHARACTERS[code]].sort((a, b) => a.localeCompare(b))
     : Object.keys(stickersByCharacter).sort((a, b) => a.localeCompare(b));
 
-  // Spotlight cycles across all characters every 2.2s — lights up pill + box together
+  // Spotlight: cycles every 2.2s — ONE pill + ONE box glow cyan together
   useEffect(() => {
     if (roster.length === 0) return;
     setGlowChar(roster[Math.floor(Math.random() * roster.length)]);
     glowRef.current = setInterval(() => {
       setGlowChar((prev) => {
         let next: string;
-        do {
-          next = roster[Math.floor(Math.random() * roster.length)];
-        } while (next === prev && roster.length > 1);
+        do { next = roster[Math.floor(Math.random() * roster.length)]; }
+        while (next === prev && roster.length > 1);
         return next;
       });
     }, 2200);
@@ -51,16 +50,14 @@ export default function MovieFranchisePage() {
 
   const displayed = activeChar ? roster.filter((c) => c === activeChar) : roster;
 
-  // Flat list of boxes: each sticker gets one box; coming-soon chars get one placeholder box
+  // One box per sticker; coming-soon chars get one placeholder
   const boxes: Array<{ char: string; sticker: any | null; key: string }> = [];
   for (const char of displayed) {
     const charStickers = stickersByCharacter[char] ?? [];
     if (charStickers.length > 0) {
-      for (const s of charStickers) {
-        boxes.push({ char, sticker: s, key: s.code });
-      }
+      for (const s of charStickers) boxes.push({ char, sticker: s, key: s.code });
     } else {
-      boxes.push({ char, sticker: null, key: `placeholder-${char}` });
+      boxes.push({ char, sticker: null, key: `ph-${char}` });
     }
   }
 
@@ -123,19 +120,18 @@ export default function MovieFranchisePage() {
                 </button>
               )}
               {roster.map((char) => {
-                const isUserSelected = activeChar === char;
+                const isSelected = activeChar === char;
                 const isGlowing = !activeChar && glowChar === char;
                 const count = stickersByCharacter[char]?.length ?? 0;
-                const hasStickers = count > 0;
                 return (
                   <button
                     key={char}
-                    onClick={() => setActiveChar(isUserSelected ? null : char)}
+                    onClick={() => setActiveChar(isSelected ? null : char)}
                     className="inline-block rounded-full px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-all text-sm flex-shrink-0 relative"
                     style={{
-                      backgroundColor: isUserSelected || isGlowing ? "#00ffff" : "#374151",
-                      color: isUserSelected || isGlowing ? "black" : hasStickers ? "#e5e7eb" : "#9ca3af",
-                      fontWeight: isUserSelected || isGlowing ? 700 : hasStickers ? 600 : 400,
+                      backgroundColor: isSelected || isGlowing ? "#00ffff" : "#374151",
+                      color: isSelected || isGlowing ? "black" : "#9ca3af",
+                      fontWeight: isSelected || isGlowing ? 700 : 400,
                       border: isGlowing ? "1px solid #00ffff" : "1px solid #4b5563",
                       boxShadow: isGlowing ? "0 0 10px #00ffff, 0 0 20px #00ffff44" : "none",
                       transition: "background-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease",
@@ -158,61 +154,61 @@ export default function MovieFranchisePage() {
         </div>
       </div>
 
-      {/* Section 4 — Sticker boxes: VERTICAL GRID, border-4 neon-border-cyan, w-40 h-40 */}
-      <div className="w-full">
-        <div className="flex justify-center pb-4 landscape:pb-16">
-          <div className="grid grid-cols-2 landscape:grid-cols-4 md:grid-cols-3 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 px-4">
-
-            {isLoading ? (
-              [...Array(4)].map((_, i) => (
+      {/* Section 4 — Sticker boxes: single horizontal scroll row, same size as homepage */}
+      <div
+        className="overflow-x-scroll overflow-y-hidden whitespace-nowrap w-full px-4 auto-hide-scrollbar"
+        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x" }}
+      >
+        <div className="inline-flex gap-3 pb-4">
+          {isLoading ? (
+            [...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="inline-flex flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 items-center justify-center"
+                style={{ borderColor: "#374151" }}
+              >
+                <span className="text-gray-600 animate-pulse text-xs">Loading…</span>
+              </div>
+            ))
+          ) : (
+            boxes.map(({ char, sticker, key }) => {
+              const isGlowing = !activeChar && glowChar === char;
+              const isSelected = activeChar === char;
+              const lit = isGlowing || isSelected;
+              return (
                 <div
-                  key={i}
-                  className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center"
+                  key={key}
+                  className="inline-flex flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 items-center justify-center overflow-hidden relative"
+                  style={{
+                    borderColor: lit ? "#00ffff" : "#374151",
+                    boxShadow: lit ? "0 0 10px #00ffff, 0 0 20px #00ffff55, inset 0 0 10px #00ffff22" : "none",
+                    transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+                  }}
                 >
-                  <span className="text-gray-500 animate-pulse text-xs">Loading…</span>
+                  {sticker?.imageUrl ? (
+                    <img
+                      src={sticker.imageUrl}
+                      alt={sticker.name}
+                      className="max-h-full max-w-full object-contain p-2"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
+                      <span
+                        className="text-xs font-montserrat font-bold leading-tight"
+                        style={{ color: lit ? "#00ffff" : "#4b5563" }}
+                      >
+                        {char}
+                      </span>
+                      <span className="text-gray-700 text-[9px] font-mono uppercase tracking-wider">
+                        Coming Soon
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ))
-            ) : (
-              boxes.map(({ char, sticker, key }) => {
-                const isGlowing = !activeChar && glowChar === char;
-                const isUserSelected = activeChar === char;
-                return (
-                  <div
-                    key={key}
-                    className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center overflow-hidden relative"
-                    style={{
-                      boxShadow: isGlowing || isUserSelected
-                        ? "0 0 12px #00ffff, 0 0 24px #00ffff55, inset 0 0 12px #00ffff22"
-                        : "none",
-                      transition: "box-shadow 0.4s ease",
-                    }}
-                  >
-                    {sticker?.imageUrl ? (
-                      <img
-                        src={sticker.imageUrl}
-                        alt={sticker.name}
-                        className="max-h-full max-w-full object-contain p-2"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
-                        <span
-                          className="text-xs font-montserrat font-bold leading-tight"
-                          style={{ color: isGlowing ? "#00ffff" : "#4b5563" }}
-                        >
-                          {char}
-                        </span>
-                        <span className="text-gray-700 text-[9px] font-mono uppercase tracking-wider">
-                          Coming Soon
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-
-          </div>
+              );
+            })
+          )}
         </div>
       </div>
 
