@@ -166,10 +166,12 @@ export const finalizeStickerUpload = mutation({
     categoryCode: v.optional(v.string()),
     subcategoryCode: v.string(),
     filename: v.string(),
+    isFranchise: v.optional(v.boolean()),
   },
 
   handler: async (ctx, args) => {
     const subcategoryCode = args.subcategoryCode.trim().toUpperCase();
+    const isFranchise = args.isFranchise ?? false;
 
     if (!subcategoryCode) {
       throw new Error("subcategoryCode is required.");
@@ -199,32 +201,47 @@ export const finalizeStickerUpload = mutation({
       };
     }
 
-    // 3 — Derive character abbreviation from the name
-    // Name format: "Star Wars - Darth Vader"  →  character part = "Darth Vader"
-    const separatorIdx = args.name.indexOf(" - ");
-    const characterPart =
-      separatorIdx !== -1 ? args.name.slice(separatorIdx + 3) : args.name;
-    const abbrev = charAbbrev(characterPart); // e.g. "DVA"
-
-    // 4 — Generate sequential code scoped to this character
-    // Prefix: MOV-STW-DVA  →  look for MOV-STW-DVA-NNNNN
-    const charPrefix = `${subcat.code}-${abbrev}`;
-
     const subcatStickers = await ctx.db
       .query("stickers")
       .withIndex("by_subcategory", (q) => q.eq("subcategoryCode", subcategoryCode))
       .collect();
 
-    // Find the max number for this specific character prefix
-    const maxNum = subcatStickers.reduce((max, s) => {
-      if (!s.code.startsWith(charPrefix + "-")) return max;
-      const suffix = s.code.slice(charPrefix.length + 1); // after the last "-"
-      const num = parseInt(suffix, 10);
-      return Number.isFinite(num) && num > max ? num : max;
-    }, 0);
+    let code: string;
 
-    const nextNum = maxNum + 1;
-    const code = `${charPrefix}-${String(nextNum).padStart(5, "0")}`;
+    if (isFranchise) {
+      // 3a — Franchise pipeline: {SUBCAT}-{CHAR_ABBREV}-{NNNNN}
+      // e.g. MOV-STW-DVA-00001
+      const separatorIdx = args.name.indexOf(" - ");
+      const characterPart =
+        separatorIdx !== -1 ? args.name.slice(separatorIdx + 3) : args.name;
+      const abbrev = charAbbrev(characterPart); // e.g. "DVA"
+      const charPrefix = `${subcat.code}-${abbrev}`;
+
+      const maxNum = subcatStickers.reduce((max, s) => {
+        if (!s.code.startsWith(charPrefix + "-")) return max;
+        const suffix = s.code.slice(charPrefix.length + 1);
+        const num = parseInt(suffix, 10);
+        return Number.isFinite(num) && num > max ? num : max;
+      }, 0);
+
+      code = `${charPrefix}-${String(maxNum + 1).padStart(5, "0")}`;
+    } else {
+      // 3b — Simple pipeline: {SUBCAT}-{NNNNN}
+      // e.g. FSH-JRD-00001
+      const maxNum = subcatStickers.reduce((max, s) => {
+        const parts = s.code.split("-");
+        // Simple codes end in 5-digit segment directly on subcategory prefix
+        // e.g. FSH-JRD-00001 → parts = ["FSH","JRD","00001"]
+        const last = parts[parts.length - 1];
+        if (s.code.startsWith(subcat.code + "-") && /^\d{5}$/.test(last)) {
+          const num = parseInt(last, 10);
+          return Number.isFinite(num) && num > max ? num : max;
+        }
+        return max;
+      }, 0);
+
+      code = `${subcat.code}-${String(maxNum + 1).padStart(5, "0")}`;
+    }
 
     // 5 — Final uniqueness check
     const dupe = await ctx.db

@@ -13,6 +13,7 @@ import {
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import { FRANCHISE_CHARACTERS } from '../data/franchiseCharacters';
 
 interface UploadResult {
   assetCode: string;
@@ -61,10 +62,15 @@ export default function AdminUploader() {
   // Derive the selected subcategory's display name for the name prefix
   const selectedSub = subcategories.find(s => s.code === subcategoryCode);
   const subName = selectedSub?.name ?? '';
-  // Full composed name: "Star Wars - Darth Vader"
-  const composedName = characterName.trim()
-    ? `${subName} - ${characterName.trim()}`
-    : '';
+
+  // Franchise pipeline (e.g. Star Wars) → needs a character name
+  // Simple pipeline (e.g. Jordan) → skip it, name = subcategory name
+  const isFranchise = subcategoryCode ? subcategoryCode in FRANCHISE_CHARACTERS : false;
+
+  // Full composed name: franchise → "Star Wars - Darth Vader", simple → "Jordan"
+  const composedName = isFranchise
+    ? (characterName.trim() ? `${subName} - ${characterName.trim()}` : '')
+    : subName;
 
   const handleCategoryChange = (code: string) => {
     setCategoryCode(code);
@@ -140,6 +146,7 @@ export default function AdminUploader() {
           filename: file.name,
           categoryCode,
           subcategoryCode,
+          isFranchise,
         });
 
         results.push({
@@ -286,30 +293,31 @@ export default function AdminUploader() {
               </Select>
             </div>
 
-            {subcategoryCode && (
+            {subcategoryCode && isFranchise && (
               <div>
                 <Label htmlFor="charname" className="text-white">
-                  Character / Sticker Name *
+                  Character Name *
                 </Label>
                 <Input
                   id="charname"
                   type="text"
-                  placeholder={`e.g. Darth Vader`}
+                  placeholder="e.g. Darth Vader"
                   value={characterName}
                   onChange={e => setCharacterName(e.target.value)}
                   className="bg-gray-800 border-gray-600 text-white"
                 />
-                {composedName && (
-                  <p className="text-cyan-400 text-xs mt-1 font-mono">
-                    Will be saved as: <span className="text-yellow-400 font-bold">{composedName}</span>
-                  </p>
-                )}
               </div>
+            )}
+
+            {subcategoryCode && composedName && (
+              <p className="text-cyan-400 text-xs font-mono -mt-1">
+                Will be saved as: <span className="text-yellow-400 font-bold">{composedName}</span>
+              </p>
             )}
 
             <Button
               type="submit"
-              disabled={isUploading || files.length === 0 || !categoryCode || !subcategoryCode || !characterName.trim()}
+              disabled={isUploading || files.length === 0 || !categoryCode || !subcategoryCode || (isFranchise && !characterName.trim())}
               className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-bold"
               data-testid="button-upload"
             >
