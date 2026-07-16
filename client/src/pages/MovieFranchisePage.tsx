@@ -190,10 +190,10 @@ export default function MovieFranchisePage() {
                     }}
                   >
                     {hasStickers ? (
-                      /* Horizontal slide strip — swipe right-to-left to browse stickers */
+                      /* Horizontal slide strip — swipe right-to-left only, no vertical drift */
                       <div
-                        className="flex h-full overflow-x-auto snap-x snap-mandatory auto-hide-scrollbar"
-                        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth" }}
+                        className="flex h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory auto-hide-scrollbar"
+                        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x", overscrollBehaviorX: "contain" }}
                       >
                         {stickers.map((s) => (
                           <div
