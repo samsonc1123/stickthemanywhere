@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'wouter';
 import { useRef, useCallback } from 'react';
+import { FloatingThem } from '../components/FloatingThem';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
@@ -58,6 +59,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2">
+      <FloatingThem />
       {/* Title */}
       <div className="text-center mb-2 landscape:mb-1">
         <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">
