@@ -95,10 +95,17 @@ const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrd
   { categoryCode: "DISNEY", code: "DS",  name: "Disney Shorts", sortOrder: 14 },
 
   // DRAGONS
-  { categoryCode: "DRAGONS", code: "DRG",     name: "Dragons",        sortOrder: 1 },
-  { categoryCode: "DRAGONS", code: "DRG-FIR", name: "Fire Dragons",   sortOrder: 2 },
-  { categoryCode: "DRAGONS", code: "DRG-ICE", name: "Ice Dragons",    sortOrder: 3 },
-  { categoryCode: "DRAGONS", code: "DRG-FAN", name: "Fantasy Dragons", sortOrder: 4 },
+  { categoryCode: "DRAGONS", code: "DRG-BBY", name: "Baby Dragons",      sortOrder: 1 },
+  { categoryCode: "DRAGONS", code: "DRG-CHN", name: "Chinese Dragons",   sortOrder: 2 },
+  { categoryCode: "DRAGONS", code: "DRG-CRY", name: "Crystal Dragons",   sortOrder: 3 },
+  { categoryCode: "DRAGONS", code: "DRG-FAN", name: "Fantasy Dragons",   sortOrder: 4 },
+  { categoryCode: "DRAGONS", code: "DRG-FIR", name: "Fire Dragons",      sortOrder: 5 },
+  { categoryCode: "DRAGONS", code: "DRG-ICE", name: "Ice Dragons",       sortOrder: 6 },
+  { categoryCode: "DRAGONS", code: "DRG-LTN", name: "Lightning Dragons", sortOrder: 7 },
+  { categoryCode: "DRAGONS", code: "DRG-OCN", name: "Ocean Dragons",     sortOrder: 8 },
+  { categoryCode: "DRAGONS", code: "DRG-SHD", name: "Shadow Dragons",    sortOrder: 9 },
+  { categoryCode: "DRAGONS", code: "DRG-SKY", name: "Sky Dragons",       sortOrder: 10 },
+  { categoryCode: "DRAGONS", code: "DRG-WST", name: "Western Dragons",   sortOrder: 11 },
 
   // FASHION
   { categoryCode: "FASHION", code: "FSH-BAP", name: "Bape",       sortOrder: 1 },
