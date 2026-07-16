@@ -207,6 +207,7 @@ export const finalizeStickerUpload = mutation({
       .collect();
 
     let code: string;
+    let nextNum: number;
 
     if (isFranchise) {
       // 3a — Franchise pipeline: {SUBCAT}-{CHAR_ABBREV}-{NNNNN}
@@ -224,15 +225,13 @@ export const finalizeStickerUpload = mutation({
         return Number.isFinite(num) && num > max ? num : max;
       }, 0);
 
-      code = `${charPrefix}-${String(maxNum + 1).padStart(5, "0")}`;
+      nextNum = maxNum + 1;
+      code = `${charPrefix}-${String(nextNum).padStart(5, "0")}`;
     } else {
       // 3b — Simple pipeline: {SUBCAT}-{NNNNN}
-      // e.g. FSH-JRD-00001
+      // e.g. FSH-JOR-00001
       const maxNum = subcatStickers.reduce((max, s) => {
-        const parts = s.code.split("-");
-        // Simple codes end in 5-digit segment directly on subcategory prefix
-        // e.g. FSH-JRD-00001 → parts = ["FSH","JRD","00001"]
-        const last = parts[parts.length - 1];
+        const last = s.code.split("-").pop() ?? "";
         if (s.code.startsWith(subcat.code + "-") && /^\d{5}$/.test(last)) {
           const num = parseInt(last, 10);
           return Number.isFinite(num) && num > max ? num : max;
@@ -240,7 +239,8 @@ export const finalizeStickerUpload = mutation({
         return max;
       }, 0);
 
-      code = `${subcat.code}-${String(maxNum + 1).padStart(5, "0")}`;
+      nextNum = maxNum + 1;
+      code = `${subcat.code}-${String(nextNum).padStart(5, "0")}`;
     }
 
     // 5 — Final uniqueness check
