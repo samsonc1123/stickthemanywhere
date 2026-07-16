@@ -79,9 +79,9 @@ export default function MemesPage() {
       {/* Stickers Grid */}
       <div className="w-full">
         <div className="flex justify-center pb-4 landscape:pb-16">
-          <div className="grid grid-cols-1 landscape:grid-cols-2 gap-3 landscape:gap-4 max-w-lg landscape:max-w-4xl px-4">
+          <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 md:landscape:grid-cols-4 gap-3 landscape:gap-4 md:gap-5 max-w-lg landscape:max-w-4xl md:max-w-2xl md:landscape:max-w-6xl px-4">
             {subcategories.map((subcat, i) => (
-              <div key={i} className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 neon-border-cyan flex items-center justify-center">
+              <div key={i} className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center">
                 <div className="flex items-center justify-center w-full h-full">
                   <span className="text-gray-500">{subcat.name}</span>
                 </div>
