@@ -163,8 +163,8 @@ export function FloatingThem({ titleRef }: Props) {
         zIndex: 9500,
         pointerEvents: "none",
         // Perspective makes the 3-D letter fold look real
-        perspective: "220px",
-        perspectiveOrigin: "50% 100%",
+        perspective: "300px",
+        perspectiveOrigin: "50% 50%",
         transform: `rotate(${pos.rot}deg)`,
         transition: moving
           ? "left 0.55s cubic-bezier(0.34,1.5,0.64,1), top 0.55s cubic-bezier(0.34,1.5,0.64,1)"
@@ -185,9 +185,10 @@ export function FloatingThem({ titleRef }: Props) {
             textShadow:
               "0 2px 6px rgba(244,114,182,0.85), 0 0 18px rgba(244,114,182,0.45)",
             display: "inline-block",
-            // Rotate around the BOTTOM edge so the letter peels up from the surface
-            transformOrigin: "50% 100%",
-            transform: `rotateX(${angles[idx]}deg)`,
+            // Right edge is the hinge — left side of each letter peels toward viewer
+            // This creates a horizontal roll T→h→e→m, not a vertical domino flip
+            transformOrigin: "100% 50%",
+            transform: `rotateY(${angles[idx]}deg)`,
             transition: `transform ${LETTER_MS}ms ease-in-out`,
             // Keep the letter visible even when it swings past 90° (face-down)
             backfaceVisibility: "visible",
