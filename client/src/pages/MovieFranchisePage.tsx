@@ -1,17 +1,42 @@
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { FRANCHISE_CHARACTERS } from "../data/franchiseCharacters";
 import "../styles/HomePage.css";
 
 export default function MovieFranchisePage() {
   const { franchiseCode } = useParams<{ franchiseCode: string }>();
   const code = (franchiseCode ?? "").toUpperCase();
+  const [activeChar, setActiveChar] = useState<string | null>(null);
 
   const subcategory = useQuery(api.subcategories.getSubcategoryByCode, { code });
-  const stickers = useQuery(api.stickers.getStickersBySubcategory, { subcategoryCode: code }) ?? [];
+  const stickers = (useQuery(api.stickers.getStickersBySubcategory, { subcategoryCode: code }) ?? []) as any[];
 
   const franchiseName = subcategory?.name ?? code;
   const isLoading = subcategory === undefined || stickers === undefined;
+
+  // Build a map: character name → sticker (matched by "Franchise - Character" naming)
+  const stickerByCharacter: Record<string, any> = {};
+  for (const sticker of stickers) {
+    const prefix = `${franchiseName} - `;
+    if (sticker.name && sticker.name.startsWith(prefix)) {
+      const charName = sticker.name.slice(prefix.length);
+      stickerByCharacter[charName] = sticker;
+    }
+  }
+
+  // Use predefined character list if available, otherwise fall back to uploaded sticker names
+  const roster: string[] = FRANCHISE_CHARACTERS[code]
+    ? [...FRANCHISE_CHARACTERS[code]].sort((a, b) => a.localeCompare(b))
+    : stickers
+        .map((s) => {
+          const prefix = `${franchiseName} - `;
+          return s.name?.startsWith(prefix) ? s.name.slice(prefix.length) : s.name ?? s.code;
+        })
+        .sort((a, b) => a.localeCompare(b));
+
+  const displayed = activeChar ? roster.filter((c) => c === activeChar) : roster;
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
@@ -37,15 +62,17 @@ export default function MovieFranchisePage() {
       </div>
 
       {/* Franchise name */}
-      <div className="text-center mb-3 landscape:mb-2">
+      <div className="text-center mb-2 landscape:mb-1">
         <h1 className="font-bold text-yellow-400 animate-categoriesFlicker font-audiowide text-lg">
           {isLoading ? "…" : franchiseName}
         </h1>
       </div>
 
-      {/* Back pill */}
-      <div className="overflow-x-scroll overflow-y-hidden whitespace-nowrap px-4 py-2 w-full mb-3 landscape:mb-2 auto-hide-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}>
+      {/* Character pill nav */}
+      <div
+        className="overflow-x-scroll overflow-y-hidden whitespace-nowrap px-4 py-2 w-full mb-2 landscape:mb-1 auto-hide-scrollbar"
+        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth", touchAction: "pan-x" }}
+      >
         <div className="inline-flex space-x-2">
           <Link href="/movies">
             <button
@@ -55,12 +82,44 @@ export default function MovieFranchisePage() {
               ←
             </button>
           </Link>
-          <span
-            className="inline-block rounded-full px-4 py-2 mx-1 font-montserrat font-bold"
-            style={{ backgroundColor: "#facc15", color: "black" }}
-          >
-            {franchiseName}
-          </span>
+
+          {isLoading ? (
+            <span className="text-gray-500 animate-pulse px-4 py-2 inline-block">Loading…</span>
+          ) : (
+            <>
+              {activeChar && (
+                <button
+                  onClick={() => setActiveChar(null)}
+                  className="inline-block rounded-full bg-gray-700 border border-gray-500 px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform text-sm text-white"
+                >
+                  All
+                </button>
+              )}
+              {roster.map((char) => {
+                const hasSticker = !!stickerByCharacter[char];
+                const isActive = activeChar === char;
+                return (
+                  <button
+                    key={char}
+                    onClick={() => setActiveChar(isActive ? null : char)}
+                    className="inline-block rounded-full px-4 py-2 mx-1 font-montserrat hover:scale-105 transition-transform text-sm"
+                    style={{
+                      backgroundColor: isActive
+                        ? "#facc15"
+                        : hasSticker
+                        ? "#00ffff"
+                        : "#374151",
+                      color: isActive || hasSticker ? "black" : "#9ca3af",
+                      fontWeight: isActive ? 700 : 400,
+                      border: hasSticker && !isActive ? "none" : isActive ? "none" : "1px solid #4b5563",
+                    }}
+                  >
+                    {char}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
       </div>
 
@@ -73,33 +132,30 @@ export default function MovieFranchisePage() {
               <div className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center">
                 <span className="text-gray-500 animate-pulse text-sm">Loading…</span>
               </div>
-            ) : stickers.length === 0 ? (
-              <div className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center">
-                <div className="flex flex-col items-center gap-1 px-3 text-center">
-                  <span className="text-cyan-400 text-xs font-montserrat font-bold">{franchiseName}</span>
-                  <span className="text-gray-600 text-[9px] font-mono uppercase tracking-wider">Coming Soon</span>
-                </div>
-              </div>
             ) : (
-              stickers.map((sticker: any) => (
-                <div
-                  key={sticker._id}
-                  className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center overflow-hidden relative"
-                >
-                  {sticker.imageUrl ? (
-                    <img
-                      src={sticker.imageUrl}
-                      alt={sticker.name ?? sticker.code}
-                      className="max-h-full max-w-full object-contain p-2"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 px-2 text-center">
-                      <span className="text-cyan-400 text-xs font-montserrat font-bold">{sticker.name ?? sticker.code}</span>
-                    </div>
-                  )}
-                </div>
-              ))
+              displayed.map((char) => {
+                const sticker = stickerByCharacter[char];
+                return (
+                  <div
+                    key={char}
+                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 neon-border-cyan flex items-center justify-center overflow-hidden relative"
+                  >
+                    {sticker?.imageUrl ? (
+                      <img
+                        src={sticker.imageUrl}
+                        alt={sticker.name}
+                        className="max-h-full max-w-full object-contain p-2"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 px-3 text-center">
+                        <span className="text-cyan-400 text-xs font-montserrat font-bold leading-tight">{char}</span>
+                        <span className="text-gray-600 text-[9px] font-mono uppercase tracking-wider">Coming Soon</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
