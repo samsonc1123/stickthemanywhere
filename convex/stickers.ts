@@ -280,6 +280,14 @@ export const finalizeStickerUpload = mutation({
   },
 });
 
+export const updateStickerImage = mutation({
+  args: { id: v.id("stickers"), storageId: v.id("_storage") },
+  handler: async (ctx, { id, storageId }) => {
+    await ctx.db.patch(id, { storageId, updatedAt: Date.now() });
+    return { updated: true };
+  },
+});
+
 export const updateStickerName = mutation({
   args: { code: v.string(), name: v.string() },
   handler: async (ctx, { code, name }) => {

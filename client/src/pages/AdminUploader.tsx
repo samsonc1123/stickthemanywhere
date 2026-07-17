@@ -83,9 +83,12 @@ export default function AdminUploader() {
   ) ?? [];
   const recentStickerData = useQuery(api.stickers.listAllStickers) ?? [];
 
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
+
   const ensureTaxonomySeeded = useMutation(api.seedTaxonomy.ensureTaxonomySeeded);
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
   const finalizeStickerUpload = useMutation(api.stickers.finalizeStickerUpload);
+  const updateStickerImage = useMutation(api.stickers.updateStickerImage);
   const sendUploadConfirmation = useAction(api.email.sendUploadConfirmation);
 
   useEffect(() => {
@@ -233,6 +236,49 @@ export default function AdminUploader() {
     }
   };
 
+  const handleRotate = async (sticker: any) => {
+    if (!sticker.imageUrl) return;
+    setRotatingId(sticker._id);
+    try {
+      const res = await fetch(sticker.imageUrl);
+      const blob = await res.blob();
+      const imgEl = new Image();
+      const blobUrl = URL.createObjectURL(blob);
+      await new Promise<void>((resolve, reject) => {
+        imgEl.onload = () => resolve();
+        imgEl.onerror = reject;
+        imgEl.src = blobUrl;
+      });
+      URL.revokeObjectURL(blobUrl);
+      // Rotate 90° clockwise
+      const canvas = document.createElement('canvas');
+      canvas.width = imgEl.naturalHeight;
+      canvas.height = imgEl.naturalWidth;
+      const ctx = canvas.getContext('2d')!;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(imgEl, -imgEl.naturalWidth / 2, -imgEl.naturalHeight / 2);
+      const outputType = blob.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      const rotatedBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), outputType, 0.92);
+      });
+      const uploadUrl = await generateUploadUrl();
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': outputType },
+        body: rotatedBlob,
+      });
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const { storageId } = await uploadRes.json();
+      await updateStickerImage({ id: sticker._id, storageId });
+      toast({ title: 'Rotated', description: `${sticker.code} updated` });
+    } catch (err: any) {
+      toast({ title: 'Rotate failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setRotatingId(null);
+    }
+  };
+
   const recentStickers = recentStickerData.slice(0, 20);
 
   return (
@@ -342,14 +388,29 @@ export default function AdminUploader() {
                 <Label htmlFor="charname" className="text-white">
                   Character Name *
                 </Label>
-                <Input
-                  id="charname"
-                  type="text"
-                  placeholder="e.g. Darth Vader"
-                  value={characterName}
-                  onChange={e => setCharacterName(e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white"
-                />
+                {FRANCHISE_CHARACTERS[subcategoryCode] ? (
+                  <Select value={characterName} onValueChange={setCharacterName}>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                      <SelectValue placeholder="Select character" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto z-50">
+                      {FRANCHISE_CHARACTERS[subcategoryCode].map((char) => (
+                        <SelectItem key={char} value={char} className="text-white hover:bg-gray-700">
+                          {char}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="charname"
+                    type="text"
+                    placeholder="e.g. Character Name"
+                    value={characterName}
+                    onChange={e => setCharacterName(e.target.value)}
+                    className="bg-gray-800 border-gray-600 text-white"
+                  />
+                )}
               </div>
             )}
 
@@ -397,16 +458,33 @@ export default function AdminUploader() {
 
         {recentStickers.length > 0 && (
           <div className="mt-4">
-            <h2 className="text-lg font-audiowide text-yellow-400 mb-4">Recent Stickers</h2>
+            <h2 className="text-lg font-audiowide text-yellow-400 mb-1">Recent Stickers</h2>
+            <p className="text-gray-500 text-xs mb-4">Tap ↻ to rotate 90° clockwise. Tap again if more rotation needed.</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {recentStickers.map((sticker) => (
-                <div key={sticker._id} className="bg-black/40 border border-cyan-400/50 rounded-lg p-2 text-center">
+                <div key={sticker._id} className="bg-black/40 border border-cyan-400/50 rounded-lg p-2 text-center relative">
                   {sticker.imageUrl ? (
-                    <img
-                      src={sticker.imageUrl}
-                      alt={sticker.name || sticker.code}
-                      className="w-full h-28 object-contain rounded mb-2"
-                    />
+                    <div className="relative">
+                      <img
+                        src={sticker.imageUrl}
+                        alt={sticker.name || sticker.code}
+                        className="w-full h-28 object-contain rounded mb-2"
+                      />
+                      <button
+                        onClick={() => handleRotate(sticker)}
+                        disabled={rotatingId === sticker._id}
+                        title="Rotate 90° clockwise"
+                        className="absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+                        style={{
+                          background: rotatingId === sticker._id ? '#374151' : '#164e63',
+                          border: '1px solid #22d3ee',
+                          color: rotatingId === sticker._id ? '#6b7280' : '#22d3ee',
+                          cursor: rotatingId === sticker._id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {rotatingId === sticker._id ? '…' : '↻'}
+                      </button>
+                    </div>
                   ) : (
                     <div className="w-full h-28 bg-gray-800 rounded mb-2 flex items-center justify-center text-gray-500 text-xs">
                       No image
