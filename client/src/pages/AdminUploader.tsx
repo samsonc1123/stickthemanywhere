@@ -15,6 +15,85 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { FRANCHISE_CHARACTERS } from '../data/franchiseCharacters';
 
+// Reads the EXIF orientation tag from a JPEG file's raw bytes
+function getExifOrientation(buffer: ArrayBuffer): number {
+  const view = new DataView(buffer);
+  if (view.getUint16(0) !== 0xFFD8) return 1; // not a JPEG
+  let offset = 2;
+  while (offset < view.byteLength) {
+    const marker = view.getUint16(offset);
+    offset += 2;
+    if (marker === 0xFFE1) {
+      // APP1 marker — EXIF lives here
+      offset += 2; // skip length
+      if (view.getUint32(offset) !== 0x45786966) return 1; // "Exif"
+      offset += 6; // skip "Exif\0\0"
+      const tiffStart = offset;
+      const littleEndian = view.getUint16(tiffStart) === 0x4949;
+      const ifdOffset = view.getUint32(tiffStart + 4, littleEndian);
+      const numEntries = view.getUint16(tiffStart + ifdOffset, littleEndian);
+      for (let i = 0; i < numEntries; i++) {
+        const entryOffset = tiffStart + ifdOffset + 2 + i * 12;
+        if (view.getUint16(entryOffset, littleEndian) === 0x0112) {
+          return view.getUint16(entryOffset + 8, littleEndian);
+        }
+      }
+      return 1;
+    } else if ((marker & 0xFF00) !== 0xFF00) {
+      break;
+    } else {
+      offset += view.getUint16(offset);
+    }
+  }
+  return 1;
+}
+
+// Draws the image onto a canvas with EXIF rotation corrected, returns a new File
+async function autoOrientFile(file: File): Promise<File> {
+  // Only JPEG/JPG files carry EXIF orientation
+  if (!file.type.match(/jpeg|jpg/i)) return file;
+
+  const buffer = await file.arrayBuffer();
+  const orientation = getExifOrientation(buffer);
+  if (orientation === 1) return file; // already correct
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+
+      // Orientations 5-8 swap width/height
+      const swap = orientation >= 5;
+      canvas.width  = swap ? h : w;
+      canvas.height = swap ? w : h;
+
+      ctx.save();
+      switch (orientation) {
+        case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;
+        case 3: ctx.transform(-1, 0, 0, -1, w, h); break;
+        case 4: ctx.transform(1, 0, 0, -1, 0, h); break;
+        case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+        case 6: ctx.transform(0, 1, -1, 0, h, 0); break;
+        case 7: ctx.transform(0, -1, -1, 0, h, w); break;
+        case 8: ctx.transform(0, -1, 1, 0, 0, w); break;
+      }
+      ctx.drawImage(img, 0, 0);
+      ctx.restore();
+
+      canvas.toBlob((blob) => {
+        if (!blob) { resolve(file); return; }
+        resolve(new File([blob], file.name, { type: file.type }));
+      }, file.type);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 interface UploadResult {
   assetCode: string;
   storagePath: string;
@@ -99,7 +178,8 @@ export default function AdminUploader() {
       return;
     }
 
-    setFiles(selectedFiles);
+    // Auto-correct EXIF orientation before storing
+    Promise.all(selectedFiles.map(autoOrientFile)).then(setFiles);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
