@@ -298,7 +298,6 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
 
 function AdminDashboard() {
   const [lastReservedCode] = useState<string>('--');
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
@@ -363,22 +362,6 @@ function AdminDashboard() {
                 </div>
               </a>
             ))}
-          </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center" style={{ transform: 'rotate(45deg)' }}>
-              <div className="w-full h-full bg-black border-2 border-cyan-500/50 flex items-center justify-center shadow-2xl">
-                <div style={{ transform: 'rotate(-45deg)' }} className="text-center p-1">
-                  <div className="text-[9px] md:text-[10px] font-bold text-yellow-400 mb-1 leading-none uppercase tracking-tighter">Catalog</div>
-                  <button
-                    onClick={() => setSyncStatus('syncing')}
-                    disabled={syncStatus === 'syncing'}
-                    className="px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold bg-cyan-600 text-white hover:bg-cyan-500 transition-colors uppercase tracking-widest"
-                  >
-                    {syncStatus === 'syncing' ? '...' : 'Sync'}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         <div className="flex justify-center gap-8 mt-20 mb-12">
