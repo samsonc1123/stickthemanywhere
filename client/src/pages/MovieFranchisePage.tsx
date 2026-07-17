@@ -34,10 +34,15 @@ export default function MovieFranchisePage() {
     ? [...FRANCHISE_CHARACTERS[code]].sort((a, b) => a.localeCompare(b))
     : Object.keys(rawByChar).sort((a, b) => a.localeCompare(b));
 
-  // 2 — Re-map raw keys → roster-casing (case-insensitive match)
+  // 2 — Re-map raw keys → roster-casing
+  // Normalize: lowercase + strip all non-alphanumeric so "R2D2" matches "R2-D2"
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const stickersByCharacter: Record<string, any[]> = {};
   for (const [rawKey, stickerList] of Object.entries(rawByChar)) {
-    const rosterMatch = roster.find(r => r.toLowerCase() === rawKey.toLowerCase()) ?? rawKey;
+    const rosterMatch =
+      roster.find(r => r.toLowerCase() === rawKey.toLowerCase()) ??
+      roster.find(r => normalize(r) === normalize(rawKey)) ??
+      rawKey;
     if (!stickersByCharacter[rosterMatch]) stickersByCharacter[rosterMatch] = [];
     stickersByCharacter[rosterMatch].push(...stickerList);
   }
