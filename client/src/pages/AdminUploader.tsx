@@ -422,8 +422,17 @@ export default function AdminUploader() {
           )}
         </div>
 
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 px-4 py-2 rounded font-bold text-sm uppercase tracking-widest border border-cyan-500 text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+          >
+            <span style={{ fontSize: '1.1em' }}>↺</span> Sync Catalog
+          </button>
+        </div>
+
         {recentStickers.length > 0 && (
-          <div className="mt-8">
+          <div className="mt-4">
             <h2 className="text-lg font-audiowide text-yellow-400 mb-4">Recent Stickers</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {recentStickers.map((sticker) => (

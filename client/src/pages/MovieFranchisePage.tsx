@@ -143,14 +143,6 @@ export default function MovieFranchisePage() {
                     }}
                   >
                     {char}
-                    {count > 1 && (
-                      <span
-                        className="absolute -top-1 -right-1 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
-                        style={{ backgroundColor: "#00ffff", color: "black" }}
-                      >
-                        {count}
-                      </span>
-                    )}
                   </button>
                 );
               })}
