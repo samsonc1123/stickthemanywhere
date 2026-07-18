@@ -125,7 +125,7 @@ export default function AdminPage() {
 
   return (
     <>
-      <AdminDashboard />
+      <AdminDashboard isAuthenticated={isAuthenticated} />
 
       {!panelOpen && (
         <button
@@ -307,7 +307,7 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
   );
 }
 
-function AdminDashboard() {
+function AdminDashboard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -431,6 +431,7 @@ function AdminDashboard() {
           </button>
         </div>
         <div className="flex justify-center gap-8 mt-20 mb-12">
+          <StatusIndicator label="Admin" value={isAuthenticated ? 'ON' : 'OFF'} status={isAuthenticated ? 'success' : 'neutral'} />
           <StatusIndicator label="Convex" value={convexValue} status={convexStatus} />
           <StatusIndicator label="Storage" value={storageOn ? 'ON' : 'OFF'} status={storageOn ? 'success' : 'neutral'} />
           <StatusIndicator label="Last Code" value={lastCode.length > 8 ? lastCode.slice(0, 8) : lastCode} status={lastCode !== '--' ? 'success' : 'neutral'} />
