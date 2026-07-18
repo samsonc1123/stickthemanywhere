@@ -191,32 +191,6 @@ export default function AdminPage() {
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={handleBootstrap}
-              disabled={!isAuthenticated || bootstrapping}
-              className={`w-full py-2 rounded-full font-bold text-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed`}
-              style={isAuthenticated ? {
-                background: 'linear-gradient(135deg, #16a34a, #22c55e)',
-                color: '#fff',
-                boxShadow: '0 0 12px rgba(34,197,94,0.7), 0 0 28px rgba(34,197,94,0.4)',
-                border: '1px solid #4ade80',
-              } : {
-                background: '#1f2937',
-                color: '#6b7280',
-                border: '1px solid #374151',
-              }}
-            >
-              {bootstrapping ? "Bootstrapping..." : "Bootstrap Admiral"}
-            </button>
-            {bootstrapResult && (
-              <div className={`text-[10px] font-mono text-center px-1 py-1 rounded border ${bootstrapResult.startsWith("ERROR") ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-green-400 border-green-800 bg-green-900/20'}`}>
-                {bootstrapResult === "upgraded" && "✓ Admin role granted"}
-                {bootstrapResult === "created_admin" && "✓ Admin created"}
-                {bootstrapResult === "already_admin" && "✓ Already admin"}
-                {bootstrapResult.startsWith("ERROR") && bootstrapResult}
-              </div>
-            )}
           </div>
         </div>
       )}
