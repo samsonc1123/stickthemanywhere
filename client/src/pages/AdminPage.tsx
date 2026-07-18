@@ -308,7 +308,6 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
 }
 
 function AdminDashboard() {
-  const [lastReservedCode] = useState<string>('--');
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -318,6 +317,10 @@ function AdminDashboard() {
   const convexConnected = convexPing !== undefined;
   const convexValue = convexConnected ? 'ON' : 'OFF';
   const convexStatus = convexConnected ? 'success' : 'neutral';
+
+  const dashStats = useQuery(api.stickers.getDashboardStats);
+  const storageOn = dashStats?.storageActive ?? false;
+  const lastCode = dashStats?.lastCode ?? '--';
 
   const ensureTaxonomySeeded = useMutation(api.seedTaxonomy.ensureTaxonomySeeded);
 
@@ -429,8 +432,8 @@ function AdminDashboard() {
         </div>
         <div className="flex justify-center gap-8 mt-20 mb-12">
           <StatusIndicator label="Convex" value={convexValue} status={convexStatus} />
-          <StatusIndicator label="Storage" value="OFF" status="neutral" />
-          <StatusIndicator label="Last Code" value={lastReservedCode} status="neutral" />
+          <StatusIndicator label="Storage" value={storageOn ? 'ON' : 'OFF'} status={storageOn ? 'success' : 'neutral'} />
+          <StatusIndicator label="Last Code" value={lastCode.length > 8 ? lastCode.slice(0, 8) : lastCode} status={lastCode !== '--' ? 'success' : 'neutral'} />
         </div>
       </div>
     </div>

@@ -1,6 +1,18 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+export const getDashboardStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const recent = await ctx.db.query("stickers")
+      .order("desc")
+      .first();
+    const storageActive = recent?.storageId != null;
+    const lastCode = recent?.name ?? recent?.subcategoryCode ?? null;
+    return { storageActive, lastCode };
+  },
+});
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
