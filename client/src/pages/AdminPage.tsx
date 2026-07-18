@@ -125,22 +125,7 @@ export default function AdminPage() {
 
   return (
     <>
-      <AdminDashboard isAuthenticated={isAuthenticated} />
-
-      {!panelOpen && (
-        <button
-          onClick={() => setPanelOpen(true)}
-          className={`fixed bottom-14 right-4 z-[20000] flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-bold font-mono uppercase tracking-widest transition-all ${
-            isAuthenticated
-              ? "bg-black/90 border-2 border-green-400 text-green-400"
-              : "bg-black/80 border border-gray-600/40 text-gray-500"
-          }`}
-          style={isAuthenticated ? { boxShadow: "0 0 8px #4ade80, 0 0 16px #4ade8055" } : {}}
-        >
-          <span className={`w-2 h-2 rounded-full ${isAuthenticated ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
-          Admin
-        </button>
-      )}
+      <AdminDashboard isAuthenticated={isAuthenticated} onAdminTap={() => setPanelOpen(v => !v)} />
 
       {showFullPanel && (
         <div className="fixed top-24 right-4 z-[20000] p-4 bg-black/90 border border-cyan-500/30 rounded shadow-2xl w-72">
@@ -307,7 +292,7 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
   );
 }
 
-function AdminDashboard({ isAuthenticated }: { isAuthenticated: boolean }) {
+function AdminDashboard({ isAuthenticated, onAdminTap }: { isAuthenticated: boolean; onAdminTap: () => void }) {
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -431,7 +416,9 @@ function AdminDashboard({ isAuthenticated }: { isAuthenticated: boolean }) {
           </button>
         </div>
         <div className="flex justify-center gap-8 mt-20 mb-12">
-          <StatusIndicator label="Admin" value={isAuthenticated ? 'ON' : 'OFF'} status={isAuthenticated ? 'success' : 'neutral'} />
+          <button onClick={onAdminTap} className="flex flex-col items-center focus:outline-none">
+            <StatusIndicator label="Admin" value={isAuthenticated ? 'ON' : 'OFF'} status={isAuthenticated ? 'success' : 'neutral'} />
+          </button>
           <StatusIndicator label="Convex" value={convexValue} status={convexStatus} />
           <StatusIndicator label="Storage" value={storageOn ? 'ON' : 'OFF'} status={storageOn ? 'success' : 'neutral'} />
           <StatusIndicator label="Last Code" value={lastCode.length > 8 ? lastCode.slice(0, 8) : lastCode} status={lastCode !== '--' ? 'success' : 'neutral'} />
