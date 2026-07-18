@@ -3,6 +3,7 @@ import { useLocation, useSearch } from 'wouter';
 import { DevBypassBar } from '../components/admin/DevBypassBar';
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { RefreshCw } from 'lucide-react';
 
 const SESSION_KEY = "admin_session_id";
 
@@ -209,9 +210,19 @@ export default function AdminPage() {
               type="button"
               onClick={handleBootstrap}
               disabled={!isAuthenticated || bootstrapping}
-              className={`w-full py-2 rounded-full font-bold text-xs shadow-2xl transition-all ${isAuthenticated ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse' : 'bg-gray-800 text-gray-500 cursor-not-allowed'} disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`w-full py-2 rounded-full font-bold text-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed`}
+              style={isAuthenticated ? {
+                background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+                color: '#fff',
+                boxShadow: '0 0 12px rgba(34,197,94,0.7), 0 0 28px rgba(34,197,94,0.4)',
+                border: '1px solid #4ade80',
+              } : {
+                background: '#1f2937',
+                color: '#6b7280',
+                border: '1px solid #374151',
+              }}
             >
-              {bootstrapping ? "Bootstrapping..." : "Bootstrap Admin Role"}
+              {bootstrapping ? "Bootstrapping..." : "Bootstrap Admiral"}
             </button>
             {bootstrapResult && (
               <div className={`text-[10px] font-mono text-center px-1 py-1 rounded border ${bootstrapResult.startsWith("ERROR") ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-green-400 border-green-800 bg-green-900/20'}`}>
@@ -299,12 +310,16 @@ function MatrixBackground({ status }: { status: 'ok' | 'error' | 'unknown' }) {
 function AdminDashboard() {
   const [lastReservedCode] = useState<string>('--');
   const [tapZoneFeedback, setTapZoneFeedback] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
   const [, setLocation] = useLocation();
 
   const convexPing = useQuery(api.authUtils.getIdentity);
   const convexConnected = convexPing !== undefined;
   const convexValue = convexConnected ? 'ON' : 'OFF';
   const convexStatus = convexConnected ? 'success' : 'neutral';
+
+  const ensureTaxonomySeeded = useMutation(api.seedTaxonomy.ensureTaxonomySeeded);
 
   const handleTapZone = (target: string) => {
     setTapZoneFeedback(target);
@@ -313,6 +328,21 @@ function AdminDashboard() {
       window.history.back();
     } else {
       setLocation(target);
+    }
+  };
+
+  const handleSystemSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncDone(false);
+    try {
+      await ensureTaxonomySeeded({});
+      setSyncDone(true);
+      setTimeout(() => setSyncDone(false), 2500);
+    } catch (_) {
+      setSyncDone(false);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -363,6 +393,39 @@ function AdminDashboard() {
               </a>
             ))}
           </div>
+
+          {/* Center System Sync diamond */}
+          <button
+            onClick={handleSystemSync}
+            disabled={syncing}
+            className="absolute z-20 w-20 h-20 flex items-center justify-center"
+            style={{ transform: 'rotate(45deg)' }}
+          >
+            <div
+              className="w-full h-full flex items-center justify-center border-2 transition-all duration-300"
+              style={{
+                backgroundColor: syncDone ? 'rgba(34,197,94,0.25)' : 'rgba(6,182,212,0.12)',
+                borderColor: syncDone ? '#22c55e' : '#06b6d4',
+                boxShadow: syncDone
+                  ? '0 0 18px rgba(34,197,94,0.6), 0 0 36px rgba(34,197,94,0.3)'
+                  : '0 0 10px rgba(6,182,212,0.4)',
+              }}
+            >
+              <div style={{ transform: 'rotate(-45deg)' }} className="flex flex-col items-center gap-0.5">
+                <RefreshCw
+                  size={14}
+                  className={syncing ? 'animate-spin' : ''}
+                  style={{ color: syncDone ? '#22c55e' : '#06b6d4' }}
+                />
+                <span
+                  className="text-[7px] font-bold uppercase tracking-wider leading-none"
+                  style={{ color: syncDone ? '#22c55e' : '#06b6d4' }}
+                >
+                  {syncDone ? 'Synced' : 'Sync'}
+                </span>
+              </div>
+            </div>
+          </button>
         </div>
         <div className="flex justify-center gap-8 mt-20 mb-12">
           <StatusIndicator label="Convex" value={convexValue} status={convexStatus} />
