@@ -15,6 +15,7 @@ const SUBCATEGORIES = [
   { name: "Nike",        code: "FSH-NIK" },
   { name: "Adidas",      code: "FSH-ADI" },
   { name: "Palace",      code: "FSH-PAL" },
+  { name: "KAWS",        code: "FSH-KAW" },
 ];
 
 const GOLD = "#c3a343";

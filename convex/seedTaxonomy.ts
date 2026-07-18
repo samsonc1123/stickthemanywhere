@@ -119,6 +119,7 @@ const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrd
   { categoryCode: "FASHION", code: "FSH-NIK", name: "Nike",       sortOrder: 9 },
   { categoryCode: "FASHION", code: "FSH-ADI", name: "Adidas",     sortOrder: 10 },
   { categoryCode: "FASHION", code: "FSH-PAL", name: "Palace",     sortOrder: 11 },
+  { categoryCode: "FASHION", code: "FSH-KAW", name: "KAWS",       sortOrder: 12 },
 
   // FLORAL
   { categoryCode: "FLORAL", code: "WORDS-FLOWERS",  name: "Words with Flowers",  sortOrder: 1 },
