@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import SmokeEffect from "../components/SmokeEffect";
 
 const SUBCATEGORIES = [
   { name: "Cannabis", code: "CANNABIS" },
@@ -11,6 +12,7 @@ const CAT = "MARIJUANA";
 
 export default function MarijuanaPage() {
   const [activeCode, setActiveCode] = useState<string | null>(null);
+  const [smokeOn, setSmokeOn] = useState(false);
   const rawData = useQuery(api.stickers.getStickersByCategory, { categoryCode: CAT });
   const stickersBySubcat = rawData ?? {};
   const isLoading = rawData === undefined;
@@ -19,22 +21,14 @@ export default function MarijuanaPage() {
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
       <div className="text-center mb-3 lg:mb-2">
-        <Link href="/">
-          <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">
-            <div className="flex flex-col items-center landscape:hidden">
-              <div className="flex items-center">
-                <span className="glow-yellow animate-flicker-extremely-slow-single">Stick</span>
-                <span className="text-pink-400 text-2xl transform rotate-12 inline-block mx-2" style={{ fontFamily: "Pacifico, cursive" }}>Them</span>
-              </div>
-              <span className="glow-yellow animate-flicker-extremely-slow-single">Anywhere</span>
-            </div>
-            <div className="hidden landscape:flex landscape:items-center landscape:justify-center landscape:gap-2 landscape:text-4xl">
-              <span className="glow-yellow animate-flicker-extremely-slow-single">Stick</span>
-              <span className="text-pink-400 text-xl transform rotate-12 inline-block" style={{ fontFamily: "Pacifico, cursive" }}>Them</span>
-              <span className="glow-yellow animate-flicker-extremely-slow-single">Anywhere</span>
-            </div>
-          </div>
-        </Link>
+        <div className="text-5xl font-cursive font-bold mb-2">
+          <span style={{ color: ACCENT }}>Weed </span>
+          <span
+            onClick={() => setSmokeOn(v => !v)}
+            style={{ color: ACCENT, cursor: 'pointer', userSelect: 'none' }}
+          >'</span>
+          <span style={{ color: ACCENT }}>Stickers</span>
+        </div>
       </div>
       <div className="text-center mb-4 lg:mb-1">
         <h1 className="font-bold animate-categoriesFlicker font-audiowide text-lg" style={{ color: ACCENT }}>Cannabis</h1>
@@ -86,6 +80,7 @@ export default function MarijuanaPage() {
           })}
         </div>
       </div></div>
+      {smokeOn && <SmokeEffect />}
     </div>
   );
 }
