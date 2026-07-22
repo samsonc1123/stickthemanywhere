@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -13,6 +13,14 @@ const CAT = "MARIJUANA";
 export default function MarijuanaPage() {
   const [activeCode, setActiveCode] = useState<string | null>(null);
   const [smokeOn, setSmokeOn] = useState(false);
+  const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleHoldStart = () => {
+    holdRef.current = setTimeout(() => setSmokeOn(v => !v), 3000);
+  };
+  const handleHoldEnd = () => {
+    if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; }
+  };
   const rawData = useQuery(api.stickers.getStickersByCategory, { categoryCode: CAT });
   const stickersBySubcat = rawData ?? {};
   const isLoading = rawData === undefined;
@@ -21,13 +29,20 @@ export default function MarijuanaPage() {
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
       <div className="text-center mb-3 lg:mb-2">
-        <div className="text-5xl font-cursive font-bold mb-2">
-          <span style={{ color: ACCENT }}>Weed </span>
-          <span
-            onClick={() => setSmokeOn(v => !v)}
-            style={{ color: ACCENT, cursor: 'pointer', userSelect: 'none' }}
-          >'</span>
-          <span style={{ color: ACCENT }}>Stickers</span>
+        <div className="text-5xl font-cursive font-bold flex flex-col items-center leading-tight">
+          <span style={{ color: ACCENT }}>Weed</span>
+          <span style={{ color: ACCENT }}>
+            Sticker
+            <span
+              onMouseDown={handleHoldStart}
+              onMouseUp={handleHoldEnd}
+              onMouseLeave={handleHoldEnd}
+              onTouchStart={handleHoldStart}
+              onTouchEnd={handleHoldEnd}
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+            >'</span>
+            s
+          </span>
         </div>
       </div>
       <div className="text-center mb-4 lg:mb-1">
