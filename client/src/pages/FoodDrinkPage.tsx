@@ -76,7 +76,7 @@ export default function FoodDrinkPage() {
                   <div className="flex h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory auto-hide-scrollbar" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x", overscrollBehaviorX: "contain" }}>
                     {stickers.map((s: any, idx: number) => (
                       <div key={s._id ?? idx} className="flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 snap-start relative">
-                        <img src={s.imageUrl} alt={s.name} style={{ position: "absolute", inset: "10px", width: "calc(100% - 20px)", height: "calc(100% - 20px)", objectFit: "contain" }} loading="lazy" />
+                        <img src={s.imageUrl} alt={s.name} style={{ position: "absolute", inset: "4%", width: "92%", height: "92%", objectFit: "contain" }} loading="lazy" />
                         {stickers.length > 1 && <span className="absolute bottom-1 right-2 text-[8px] font-mono" style={{ color: `${ACCENT}88` }}>{idx + 1}/{stickers.length}</span>}
                       </div>
                     ))}

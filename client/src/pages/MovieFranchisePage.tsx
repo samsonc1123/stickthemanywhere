@@ -202,9 +202,9 @@ export default function MovieFranchisePage() {
                               alt={s.name}
                               style={{
                                 position: "absolute",
-                                inset: "10px",
-                                width: "calc(100% - 20px)",
-                                height: "calc(100% - 20px)",
+                                inset: "4%",
+                                width: "92%",
+                                height: "92%",
                                 objectFit: "contain",
                               }}
                               loading="lazy"
