@@ -13,12 +13,41 @@ const CAT = "MARIJUANA";
 export default function MarijuanaPage() {
   const [activeCode, setActiveCode] = useState<string | null>(null);
   const [smokeOn, setSmokeOn] = useState(false);
+  const [holding, setHolding] = useState(false);
   const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const apostropheRef = useRef<HTMLSpanElement>(null);
 
-  const handleHoldStart = () => {
-    holdRef.current = setTimeout(() => setSmokeOn(v => !v), 3000);
+  useEffect(() => {
+    const el = apostropheRef.current;
+    if (!el) return;
+    const start = (e: TouchEvent) => {
+      e.preventDefault();
+      setHolding(true);
+      holdRef.current = setTimeout(() => {
+        setSmokeOn(v => !v);
+        setHolding(false);
+      }, 3000);
+    };
+    const end = () => {
+      setHolding(false);
+      if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; }
+    };
+    el.addEventListener('touchstart', start, { passive: false });
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+    return () => {
+      el.removeEventListener('touchstart', start);
+      el.removeEventListener('touchend', end);
+      el.removeEventListener('touchcancel', end);
+    };
+  }, []);
+
+  const onMouseDown = () => {
+    setHolding(true);
+    holdRef.current = setTimeout(() => { setSmokeOn(v => !v); setHolding(false); }, 3000);
   };
-  const handleHoldEnd = () => {
+  const onMouseUp = () => {
+    setHolding(false);
     if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; }
   };
   const rawData = useQuery(api.stickers.getStickersByCategory, { categoryCode: CAT });
@@ -34,12 +63,22 @@ export default function MarijuanaPage() {
           <span style={{ color: ACCENT }}>
             Sticker
             <span
-              onMouseDown={handleHoldStart}
-              onMouseUp={handleHoldEnd}
-              onMouseLeave={handleHoldEnd}
-              onTouchStart={handleHoldStart}
-              onTouchEnd={handleHoldEnd}
-              style={{ cursor: 'pointer', userSelect: 'none' }}
+              ref={apostropheRef}
+              onMouseDown={onMouseDown}
+              onMouseUp={onMouseUp}
+              onMouseLeave={onMouseUp}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{
+                cursor: 'pointer',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+                display: 'inline-block',
+                padding: '0 4px',
+                color: holding ? '#fff' : ACCENT,
+                textShadow: holding ? `0 0 12px ${ACCENT}, 0 0 24px ${ACCENT}` : 'none',
+                transition: 'color 0.2s, text-shadow 0.2s',
+              } as React.CSSProperties}
             >'</span>
             s
           </span>
