@@ -5,6 +5,7 @@ import { api } from "../../../convex/_generated/api";
 
 const SUBCATEGORIES = [
   { name: "Frozen",             code: "FRZ" },
+  { name: "Lilo & Stitch",     code: "LLS" },
   { name: "Lion King",          code: "TLK" },
   { name: "Toy Story",          code: "TOY" },
   { name: "Moana",              code: "MOA" },

@@ -93,6 +93,7 @@ const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrd
   { categoryCode: "DISNEY", code: "CND", name: "Cinderella",    sortOrder: 12 },
   { categoryCode: "DISNEY", code: "BTB", name: "Beauty & the Beast",sortOrder: 13 },
   { categoryCode: "DISNEY", code: "DS",  name: "Disney Shorts", sortOrder: 14 },
+  { categoryCode: "DISNEY", code: "LLS", name: "Lilo & Stitch", sortOrder: 15 },
 
   // DRAGONS
   { categoryCode: "DRAGONS", code: "DRG-BBY", name: "Baby Dragons",      sortOrder: 1 },
