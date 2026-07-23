@@ -148,6 +148,41 @@ export const getStickersByCategory = query({
   },
 });
 
+export const getStaticClingStickers = query({
+  args: {},
+  handler: async (ctx) => {
+    // Query by substrate index first (most stickers will be flagged this way)
+    const bySubstrate = await ctx.db
+      .query("stickers")
+      .withIndex("by_substrate", (q) => q.eq("is_transparent_substrate", true))
+      .collect();
+
+    // Full scan for stickers tagged via materials array only
+    const all = await ctx.db.query("stickers").collect();
+    const byMaterial = all.filter(
+      (s) => Array.isArray(s.materials) && s.materials.includes("static_cling_pvc")
+    );
+
+    // Merge & deduplicate
+    const seen = new Set<string>();
+    const merged = [...bySubstrate, ...byMaterial].filter((s) => {
+      if (seen.has(s._id)) return false;
+      seen.add(s._id);
+      return true;
+    });
+
+    const results: Record<string, any[]> = {};
+    for (const s of merged) {
+      if (!s.isActive) continue;
+      const key = s.subcategoryCode ?? "UNKNOWN";
+      if (!results[key]) results[key] = [];
+      const imageUrl = s.storageId ? await ctx.storage.getUrl(s.storageId) : null;
+      results[key].push({ ...s, imageUrl });
+    }
+    return results;
+  },
+});
+
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export const updateSortOrders = mutation({
