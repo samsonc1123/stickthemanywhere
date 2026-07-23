@@ -384,3 +384,11 @@ export const fixStickerCodeAndName = mutation({
     return { updated: true, oldCode: OLD, newCode: NEW, newName, linksPatched: links.length };
   },
 });
+
+export const deleteSticker = mutation({
+  args: { id: v.id("stickers") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+    return { deleted: true };
+  },
+});
