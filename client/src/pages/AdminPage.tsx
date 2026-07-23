@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useSearch } from 'wouter';
-import { DevBypassBar } from '../components/admin/DevBypassBar';
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { RefreshCw } from 'lucide-react';
@@ -195,7 +194,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      <DevBypassBar />
     </>
   );
 }
