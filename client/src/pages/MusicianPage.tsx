@@ -14,6 +14,7 @@ const SUBCATEGORIES = [
   { name: "Harry Styles",      code: "MUS-HAR" },
   { name: "Justin Bieber",     code: "MUS-JBI" },
   { name: "Justin Timberlake", code: "MUS-JTI" },
+  { name: "K-pop",             code: "MUS-KPO" },
   { name: "Lizzo",             code: "MUS-LIZ" },
   { name: "Olivia Rodrigo",    code: "MUS-OLI" },
   { name: "Rihanna",           code: "MUS-RIH" },

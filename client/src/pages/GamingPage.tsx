@@ -6,8 +6,9 @@ import { api } from "../../../convex/_generated/api";
 const SUBCATEGORIES = [
   { name: "Mario",        code: "MAR" },
   { name: "Sonic",        code: "SON" },
-  { name: "D&D",          code: "DND" },
-  { name: "Zelda",        code: "ZEL" },
+  { name: "D&D",            code: "DND" },
+  { name: "Demon Hunters", code: "DMH" },
+  { name: "Zelda",          code: "ZEL" },
   { name: "Master Chief", code: "MAS" },
   { name: "Minecraft",    code: "MCR" },
   { name: "Roblox",       code: "ROB" },
