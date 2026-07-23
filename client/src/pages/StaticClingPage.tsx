@@ -4,7 +4,9 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
 const SUBCATEGORIES = [
-  { name: "Sports Phrases", code: "SPP" },
+  { name: "Logos",   code: "SCP-LOG" },
+  { name: "Phrases", code: "SCP-PHR" },
+  { name: "Sports",  code: "SCP-SPT" },
 ];
 
 const ACCENT = "#7dd3fc";
