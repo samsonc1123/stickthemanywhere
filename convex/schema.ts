@@ -82,10 +82,26 @@ export default defineSchema({
     metadata: v.optional(v.any()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+    // ─── Material & print spec fields ────────────────────────────────────────
+    // e.g. ['static_cling_pvc', 'laminated_vinyl']
+    materials: v.optional(v.array(v.string())),
+    // TRUE for static cling PVC substrates
+    is_transparent_substrate: v.optional(v.boolean()),
+    // Whether opaque white ink is printed under the graphic
+    has_spot_white_ink: v.optional(v.boolean()),
+    // % of negative space that is clear (0–100)
+    transparency_coverage_pct: v.optional(v.number()),
+    // SKU prefix, e.g. "SCP"
+    prefix: v.optional(v.string()),
+    // Routing tag for print vendor, e.g. "sticker_mule" or "StickerApp"
+    vendor_target: v.optional(v.string()),
+    // Preview background type: "glass_window" | "white_backing"
+    preview_bg_type: v.optional(v.string()),
   })
     .index("by_code", ["code"])
     .index("by_subcategory", ["subcategoryCode"])
-    .index("by_category", ["categoryCode"]),
+    .index("by_category", ["categoryCode"])
+    .index("by_substrate", ["is_transparent_substrate"]),
 
   stickerGroupLinks: defineTable({
     stickerCode: v.string(),
@@ -234,4 +250,20 @@ export default defineSchema({
     .index("by_sticker", ["stickerId"])
     .index("by_taxonomy", ["taxonomyId"])
     .index("by_sticker_taxonomy", ["stickerId", "taxonomyId"]),
+
+  category_prefix_rules: defineTable({
+    // e.g. "disney", "gaming", "animals"
+    category_slug: v.string(),
+    // e.g. "static_cling_pvc" | "laminated_vinyl" — omit to match any material
+    material_type: v.optional(v.string()),
+    // SKU prefix to apply, e.g. "SCP", "LV", "STD"
+    prefix: v.string(),
+    // Print vendor to route to, e.g. "sticker_mule", "StickerApp"
+    vendor_id: v.string(),
+    // Lower number = higher priority when multiple rules match
+    priority: v.number(),
+  })
+    .index("by_category", ["category_slug"])
+    .index("by_material", ["material_type"])
+    .index("by_prefix", ["prefix"]),
 });
