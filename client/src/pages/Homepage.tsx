@@ -176,7 +176,7 @@ export default function HomePage() {
           return (
             <Link key={cat} href={href}>
               <button 
-                className={`inline-block rounded-full ${cat === "Trump" ? "relative overflow-hidden" : cat === "Christian" ? "bg-yellow-400" : cat === "Fashion" ? "relative overflow-hidden" : cat === "Flowers" ? "bg-pink-300" : cat === "Kawaii" ? "bg-purple-500" : cat === "Hello Kitty" ? "bg-neon-pink" : cat === "Unicorns" ? "bg-pink-400" : cat === "Dragons" ? "bg-red-600" : cat === "Marijuana" ? "relative overflow-hidden" : cat === "Hispanic" ? "bg-orange-500" : cat === "Pokemon" ? "bg-neon-yellow" : cat === "Disney" ? "bg-blue-400" : cat === "Psychedelic" ? "relative overflow-hidden" : cat === "Musicians" ? "" : "bg-neon-aqua"} px-4 py-2 mx-1 font-montserrat`}
+                className={`inline-block rounded-full ${cat === "Trump" ? "relative overflow-hidden" : cat === "Christian" ? "bg-yellow-400" : cat === "Fashion" ? "relative overflow-hidden" : cat === "Flowers" ? "bg-pink-300" : cat === "Kawaii" ? "bg-purple-500" : cat === "Hello Kitty" ? "bg-neon-pink" : cat === "Unicorns" ? "bg-pink-400" : cat === "Dragons" ? "bg-red-600" : cat === "Marijuana" ? "relative overflow-hidden" : cat === "Hispanic" ? "bg-orange-500" : cat === "Pokemon" ? "bg-neon-yellow" : cat === "Disney" ? "bg-blue-400" : cat === "Psychedelic" ? "relative overflow-hidden" : cat === "Musicians" ? "" : cat === "Cars" ? "" : "bg-neon-aqua"} px-4 py-2 mx-1 font-montserrat`}
                 style={cat === "Trump" ? { 
                   color: 'black',
                   background: 'linear-gradient(180deg, #b22234 0%, #b22234 15%, white 15%, white 30%, #b22234 30%, #b22234 45%, white 45%, white 60%, #b22234 60%, #b22234 75%, white 75%, white 90%, #b22234 90%)',
@@ -209,6 +209,10 @@ export default function HomePage() {
                   color: 'black',
                   backgroundColor: '#e879f9',
                   boxShadow: '0 0 8px #e879f9aa'
+                } : cat === "Cars" ? {
+                  color: 'black',
+                  backgroundColor: '#f97316',
+                  boxShadow: '0 0 8px #f97316aa'
                 } : { color: 'black' }}
               >
                 {cat === "Pokemon" && (
