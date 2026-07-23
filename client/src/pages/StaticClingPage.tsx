@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import StaticArcCanvas from "../components/StaticArcCanvas";
 
 const SUBCATEGORIES = [
   { name: "Logos",   code: "SCP-LOG" },
@@ -34,6 +35,7 @@ export default function StaticClingPage() {
 
   return (
     <div className="min-h-screen bg-perforated text-white font-orbitron flex flex-col items-center p-4 pt-4 landscape:pt-2 pb-16">
+      <StaticArcCanvas />
       <div className="text-center mb-3 lg:mb-2">
         <Link href="/">
           <div className="text-5xl font-cursive font-bold mb-2 cursor-pointer">

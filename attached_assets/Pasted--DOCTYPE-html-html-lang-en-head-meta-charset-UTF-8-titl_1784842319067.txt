@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Static Cling PVC — Electric Theme</title>
+<style>
+  html,body{
+    margin:0; height:100%; overflow:hidden;
+    background: radial-gradient(circle at 50% 30%, #14151d 0%, #05050a 70%);
+    font-family: -apple-system, sans-serif;
+    color:#eaf6ff;
+  }
+  .wrap{ position:relative; width:100%; height:100vh; }
+  canvas{ position:absolute; inset:0; display:block; }
+  #bolts{ z-index:2; pointer-events:none; }
+  #noise{ z-index:1; opacity:.05; mix-blend-mode: screen; pointer-events:none; }
+  .content{
+    position:relative; z-index:3;
+    height:100%;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+  }
+  h1{
+    font-size: clamp(2rem,6vw,3.4rem);
+    letter-spacing:.04em;
+    text-shadow: 0 0 8px #9fd8ff, 0 0 24px #4fb3ff;
+    margin:0;
+  }
+  p{
+    color:#9fb3c8; font-size:.9rem; margin-top:10px;
+  }
+  #flash{
+    position:absolute; inset:0; background:white; opacity:0;
+    pointer-events:none; z-index:4;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="noise"></canvas>
+  <canvas id="bolts"></canvas>
+  <div id="flash"></div>
+  <div class="content">
+    <h1>STATIC CLING PVC</h1>
+    <p>move your cursor near the edges — charge builds and arcs jump to you</p>
+  </div>
+</div>
+
+<script>
+const boltsCanvas = document.getElementById('bolts');
+const noiseCanvas = document.getElementById('noise');
+const flash = document.getElementById('flash');
+const bctx = boltsCanvas.getContext('2d');
+const nctx = noiseCanvas.getContext('2d');
+
+function resize(){
+  [boltsCanvas, noiseCanvas].forEach(c=>{
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+  });
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ---- static noise layer ----
+function drawNoise(){
+  const w = noiseCanvas.width, h = noiseCanvas.height;
+  const imgData = nctx.createImageData(w,h);
+  for(let i=0;i<imgData.data.length;i+=4){
+    const v = Math.random()*255;
+    imgData.data[i]=v; imgData.data[i+1]=v; imgData.data[i+2]=v; imgData.data[i+3]=255;
+  }
+  nctx.putImageData(imgData,0,0);
+}
+setInterval(drawNoise, 100);
+
+// ---- procedural lightning bolt (midpoint displacement) ----
+function generateBolt(x1,y1,x2,y2,displace,segments,branchChance){
+  // returns array of {points:[[x,y],...]} main + branches
+  const branches = [];
+  function subdivide(x1,y1,x2,y2,disp,depth){
+    if (depth<=0 || disp<2){
+      return [[x1,y1],[x2,y2]];
+    }
+    const mx = (x1+x2)/2 + (Math.random()-0.5)*disp;
+    const my = (y1+y2)/2 + (Math.random()-0.5)*disp;
+    if (Math.random() < branchChance && depth < segments){
+      const bx = mx + (Math.random()-0.5)*disp*3;
+      const by = my + (Math.random()-0.5)*disp*3 + disp;
+      branches.push(subdivide(mx,my,bx,by, disp*0.5, depth-1));
+    }
+    const left = subdivide(x1,y1,mx,my, disp*0.55, depth-1);
+    const right = subdivide(mx,my,x2,y2, disp*0.55, depth-1);
+    return left.concat(right.slice(1));
+  }
+  const main = subdivide(x1,y1,x2,y2,displace,segments);
+  return {main, branches};
+}
+
+function drawPath(ctx, pts, width, alpha){
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.strokeStyle = `rgba(160,220,255,${alpha})`;
+  ctx.lineWidth = width;
+  ctx.shadowColor = '#7fd4ff';
+  ctx.shadowBlur = 14;
+  ctx.stroke();
+}
+
+function strikeBolt(x1,y1,x2,y2, opts={}){
+  const {segments=6, displace=Math.abs(x2-x1)*0.5+40, branchChance=0.35, duration=180, doFlash=false} = opts;
+  const bolt = generateBolt(x1,y1,x2,y2,displace,segments,branchChance);
+  let start = null;
+  if (doFlash){
+    flash.style.transition = 'none';
+    flash.style.opacity = 0.12;
+    setTimeout(()=>{ flash.style.transition='opacity .3s ease'; flash.style.opacity=0; }, 40);
+  }
+  function frame(t){
+    if(!start) start=t;
+    const elapsed = t-start;
+    bctx.clearRect(0,0,boltsCanvas.width, boltsCanvas.height);
+    const alpha = 1 - elapsed/duration;
+    if (alpha > 0){
+      // faint outer glow pass
+      drawPath(bctx, bolt.main, 4, alpha*0.25);
+      drawPath(bctx, bolt.main, 1.6, alpha);
+      bolt.branches.forEach(b => drawPath(bctx, b, 1, alpha*0.8));
+      requestAnimationFrame(frame);
+    } else {
+      bctx.clearRect(0,0,boltsCanvas.width, boltsCanvas.height);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---- ambient random strikes across the page ----
+function ambientStrike(){
+  const w = boltsCanvas.width, h = boltsCanvas.height;
+  const x1 = Math.random()*w;
+  const x2 = x1 + (Math.random()-0.5)*160;
+  strikeBolt(x1, 0, x2, h*0.35 + Math.random()*h*0.4, {doFlash: Math.random()<0.3});
+  const next = 1400 + Math.random()*2600;
+  setTimeout(ambientStrike, next);
+}
+setTimeout(ambientStrike, 900);
+
+// ---- cursor arc: charge builds near edges, arcs jump to cursor ----
+let mouseX = null, mouseY = null;
+window.addEventListener('mousemove', e=>{
+  mouseX = e.clientX; mouseY = e.clientY;
+});
+
+function maybeCursorArc(){
+  if (mouseX !== null){
+    const w = boltsCanvas.width;
+    const distFromEdge = Math.min(mouseX, w-mouseX);
+    // more likely to arc the closer you are to an edge
+    const chance = Math.max(0, 1 - distFromEdge/220);
+    if (Math.random() < chance*0.6){
+      const fromLeft = mouseX < w/2;
+      const sx = fromLeft ? 0 : w;
+      const sy = mouseY + (Math.random()-0.5)*80;
+      strikeBolt(sx, sy, mouseX, mouseY, {segments:5, displace:50, branchChance:0.25, duration:140});
+    }
+  }
+  setTimeout(maybeCursorArc, 250);
+}
+maybeCursorArc();
+</script>
+</body>
+</html>
