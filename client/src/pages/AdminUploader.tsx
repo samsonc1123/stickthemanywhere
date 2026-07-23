@@ -286,14 +286,14 @@ export default function AdminUploader() {
       <div
         onTouchStart={() => handleTapZone('/admin')}
         onClick={() => handleTapZone('/admin')}
-        className={`fixed top-0 left-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin' ? 'bg-white/30' : 'bg-transparent'}`}
+        className={`fixed top-0 left-0 w-[70px] h-[70px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin' ? 'bg-white/30' : 'bg-transparent'}`}
         title="Admin Dugout"
         style={{ pointerEvents: 'auto', WebkitTapHighlightColor: 'transparent' }}
       />
       <div
         onTouchStart={() => handleTapZone('/admin/prefix-mapper')}
         onClick={() => handleTapZone('/admin/prefix-mapper')}
-        className={`fixed top-0 right-0 w-[150px] h-[150px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin/prefix-mapper' ? 'bg-white/30' : 'bg-transparent'}`}
+        className={`fixed top-0 right-0 w-[70px] h-[70px] z-[9999] cursor-pointer transition-all ${tapZoneFeedback === '/admin/prefix-mapper' ? 'bg-white/30' : 'bg-transparent'}`}
         title="Prefix Rules"
         style={{ pointerEvents: 'auto', WebkitTapHighlightColor: 'transparent' }}
       />
