@@ -26,6 +26,7 @@ const CATEGORIES: { code: string; name: string; icon?: string; sortOrder: number
   { code: "TRIP",             name: "Trip",             icon: "🍄", sortOrder: 23 },
   { code: "TRUMP",            name: "Trump",            icon: "🦅", sortOrder: 24 },
   { code: "UNICORNS",         name: "Unicorns",         icon: "🦄", sortOrder: 25 },
+  { code: "SCP",             name: "Static Cling PVC", icon: "⚡", sortOrder: 26 },
 ];
 
 const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrder: number }[] = [
@@ -293,6 +294,11 @@ const SUBCATEGORIES: { categoryCode: string; code: string; name: string; sortOrd
 
   // UNICORNS
   { categoryCode: "UNICORNS", code: "UNI", name: "Unicorns", sortOrder: 1 },
+
+  // STATIC CLING PVC
+  { categoryCode: "SCP", code: "SCP-LOG", name: "Logos",   sortOrder: 1 },
+  { categoryCode: "SCP", code: "SCP-PHR", name: "Phrases", sortOrder: 2 },
+  { categoryCode: "SCP", code: "SCP-SPT", name: "Sports",  sortOrder: 3 },
 ];
 
 export const ensureTaxonomySeeded = mutation({
