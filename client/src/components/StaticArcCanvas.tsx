@@ -92,9 +92,16 @@ export default function StaticArcCanvas() {
       if (!mounted || !canvas) return;
       const w = canvas.width;
       const h = canvas.height;
+      const fromBottom = Math.random() < 0.5;
       const x1 = Math.random() * w;
       const x2 = x1 + (Math.random() - 0.5) * 160;
-      strikeBolt(x1, 0, x2, h * 0.35 + Math.random() * h * 0.45);
+      if (fromBottom) {
+        // shoots up from the bottom
+        strikeBolt(x1, h, x2, h * 0.55 - Math.random() * h * 0.45);
+      } else {
+        // shoots down from the top
+        strikeBolt(x1, 0, x2, h * 0.35 + Math.random() * h * 0.45);
+      }
       timeoutId = setTimeout(ambientStrike, 1800 + Math.random() * 3000);
     }
 
