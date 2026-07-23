@@ -6,9 +6,17 @@ function makeHex(bytes: Uint8Array): string {
   return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
 }
 
+const ALLOWED_ADMIN_EMAILS = [
+  "jhonnycomelately82@gmail.com",
+  "bashan727@yahoo.com",
+];
+
 export const sendMagicLink = action({
   args: { email: v.string(), siteUrl: v.string() },
   handler: async (ctx, { email, siteUrl }) => {
+    if (!ALLOWED_ADMIN_EMAILS.includes(email.trim().toLowerCase())) {
+      return { sent: false, magicUrl: null, emailError: "Not authorized" };
+    }
     const tokenBytes = new Uint8Array(32);
     crypto.getRandomValues(tokenBytes);
     const token = makeHex(tokenBytes);
@@ -103,6 +111,9 @@ export const consumeToken = internalMutation({
     if (!record) return { ok: false as const, error: "Invalid link", email: "" };
     if (record.used) return { ok: false as const, error: "Link already used", email: "" };
     if (Date.now() > record.expiresAt) return { ok: false as const, error: "Link expired", email: "" };
+    if (!ALLOWED_ADMIN_EMAILS.includes(record.email.trim().toLowerCase())) {
+      return { ok: false as const, error: "Not authorized", email: "" };
+    }
 
     await ctx.db.patch(record._id, { used: true });
     return { ok: true as const, error: "", email: record.email };
