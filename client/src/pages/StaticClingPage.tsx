@@ -100,7 +100,7 @@ export default function StaticClingPage() {
               ? [...Array(2)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 flex items-center justify-center"
+                    className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 flex items-center justify-center"
                     style={{ borderColor: "#374151" }}
                   >
                     <span className="text-gray-600 animate-pulse text-xs">Loading…</span>
@@ -112,7 +112,7 @@ export default function StaticClingPage() {
                   return (
                     <div
                       key={sub.code}
-                      className="w-40 h-40 landscape:w-36 landscape:h-36 border-4 overflow-hidden relative"
+                      className="w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 border-4 overflow-hidden relative"
                       style={{
                         ...checkerStyle,
                         borderColor: ACCENT,
@@ -134,7 +134,7 @@ export default function StaticClingPage() {
                           {stickers.map((s: any, idx: number) => (
                             <div
                               key={s._id ?? idx}
-                              className="flex-shrink-0 w-40 h-40 landscape:w-36 landscape:h-36 snap-start relative"
+                              className="flex-shrink-0 w-52 h-52 landscape:w-52 landscape:h-52 md:w-56 md:h-56 md:landscape:w-56 md:landscape:h-56 snap-start relative"
                             >
                               <img
                                 src={s.imageUrl}
