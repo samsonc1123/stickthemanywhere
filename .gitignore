@@ -1,8 +1,9 @@
 node_modules/
 client/node_modules/
 server/node_modules/
-dist/
-build/
+/dist/
+/build/
+/client/build/
 .cache/
 .next/
 *.zip
